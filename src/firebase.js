@@ -4,7 +4,8 @@
 // ╚══════════════════════════════════════════════════════════════╝
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, set, get } from "firebase/database";
+import { getDatabase, ref, onValue, set, get, push } from "firebase/database";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCpZb8GS6bzJWf82P-L5cG1GPSgOyK7aqY",
@@ -19,51 +20,49 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
-// ─── API pour le tracker ───
-
-const DATA_PATH = "baby-tracker/data";
-
-/**
- * Écoute les changements en temps réel
- * @param {Function} callback - appelé à chaque changement avec les nouvelles données
- * @returns {Function} unsubscribe
- */
-export function subscribeToData(callback) {
-  const dataRef = ref(db, DATA_PATH);
-  const unsubscribe = onValue(dataRef, (snapshot) => {
-    const val = snapshot.val();
-    callback(val);
-  }, (error) => {
-    console.error("Firebase read error:", error);
-  });
-  return unsubscribe;
+// ─── Multi-profile API ───
+export function subscribeToProfiles(callback) {
+  return onValue(ref(db, "baby-tracker/profiles"), (s) => callback(s.val() || {}));
 }
 
-/**
- * Sauvegarde les données complètes
- * @param {Object} data
- */
-export async function saveData(data) {
-  try {
-    await set(ref(db, DATA_PATH), data);
-  } catch (error) {
-    console.error("Firebase write error:", error);
-  }
+export async function createProfile(data) {
+  const r = push(ref(db, "baby-tracker/profiles"));
+  const id = r.key;
+  await set(r, { ...data, id, createdAt: new Date().toISOString() });
+  return id;
 }
 
-/**
- * Lecture unique des données
- * @returns {Object|null}
- */
-export async function loadData() {
-  try {
-    const snapshot = await get(ref(db, DATA_PATH));
-    return snapshot.val();
-  } catch (error) {
-    console.error("Firebase load error:", error);
-    return null;
-  }
+export async function deleteProfile(id) {
+  await set(ref(db, `baby-tracker/profiles/${id}`), null);
+  await set(ref(db, `baby-tracker/data/${id}`), null);
 }
 
-export { db };
+export async function updateProfile(id, updates) {
+  const s = await get(ref(db, `baby-tracker/profiles/${id}`));
+  await set(ref(db, `baby-tracker/profiles/${id}`), { ...(s.val() || {}), ...updates });
+}
+
+// ─── Per-profile data API ───
+export function subscribeToData(profileId, callback) {
+  return onValue(ref(db, `baby-tracker/data/${profileId}`), (s) => callback(s.val()), (e) => console.error(e));
+}
+
+export async function saveData(profileId, data) {
+  try { await set(ref(db, `baby-tracker/data/${profileId}`), data); } catch (e) { console.error(e); }
+}
+
+export async function loadData(profileId) {
+  try { const s = await get(ref(db, `baby-tracker/data/${profileId}`)); return s.val(); } catch (e) { return null; }
+}
+
+// ─── Photo upload ───
+export async function uploadPhoto(profileId, file) {
+  const name = `${Date.now()}_${Math.random().toString(36).slice(2,6)}_${file.name}`;
+  const r = storageRef(storage, `baby-tracker/${profileId}/photos/${name}`);
+  await uploadBytes(r, file);
+  return getDownloadURL(r);
+}
+
+export { db, storage };
