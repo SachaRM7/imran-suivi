@@ -1,43 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  FIREBASE CONFIG — Remplace les valeurs ci-dessous          ║
+// ║  par celles de TON projet Firebase (voir guide DEPLOY.md)   ║
+// ╚══════════════════════════════════════════════════════════════╝
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, onValue, set, get } from "firebase/database";
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+const firebaseConfig = {
+  apiKey: "REMPLACE_PAR_TA_CLE_API",
+  authDomain: "REMPLACE.firebaseapp.com",
+  databaseURL: "https://REMPLACE-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "REMPLACE",
+  storageBucket: "REMPLACE.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxx"
+};
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
-</html>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ─── API pour le tracker ───
+
+const DATA_PATH = "baby-tracker/data";
+
+/**
+ * Écoute les changements en temps réel
+ * @param {Function} callback - appelé à chaque changement avec les nouvelles données
+ * @returns {Function} unsubscribe
+ */
+export function subscribeToData(callback) {
+  const dataRef = ref(db, DATA_PATH);
+  const unsubscribe = onValue(dataRef, (snapshot) => {
+    const val = snapshot.val();
+    callback(val);
+  }, (error) => {
+    console.error("Firebase read error:", error);
+  });
+  return unsubscribe;
+}
+
+/**
+ * Sauvegarde les données complètes
+ * @param {Object} data
+ */
+export async function saveData(data) {
+  try {
+    await set(ref(db, DATA_PATH), data);
+  } catch (error) {
+    console.error("Firebase write error:", error);
+  }
+}
+
+/**
+ * Lecture unique des données
+ * @returns {Object|null}
+ */
+export async function loadData() {
+  try {
+    const snapshot = await get(ref(db, DATA_PATH));
+    return snapshot.val();
+  } catch (error) {
+    console.error("Firebase load error:", error);
+    return null;
+  }
+}
+
+export { db };
