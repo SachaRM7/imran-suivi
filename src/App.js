@@ -185,8 +185,8 @@ const defaultState = () => ({
 const fmt = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 const fmtTime = (d) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 const fmtFull = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const nowStr = () => new Date().toISOString().slice(0, 16);
+const todayStr = () => { const d = new Date(), pad = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const nowStr = () => { const d = new Date(), pad = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 const babyAgeMonths = (bd) => {
@@ -379,37 +379,87 @@ const DashboardHome = ({ data, goTo }) => {
   );
 };
 
+// ─── HOOK: useSwipeDay ───
+const useSwipeDay = () => {
+  const [dayOffset, setDayOffset] = useState(0);
+  const containerRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onStart = (e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; };
+    const onEnd = (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const dy = e.changedTouches[0].clientY - touchStartY.current;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (Math.abs(dx) < 50) return;
+      if (dx < 0) setDayOffset(o => o - 1);
+      else setDayOffset(o => Math.min(0, o + 1));
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => { el.removeEventListener("touchstart", onStart); el.removeEventListener("touchend", onEnd); };
+  }, []);
+
+  const pad = n => String(n).padStart(2, "0");
+  const offsetDate = (offset) => { const d = new Date(); d.setDate(d.getDate() + offset); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+  const dateStr = offsetDate(dayOffset);
+  const dateLabel = dayOffset === 0 ? "Aujourd'hui" : new Date(dateStr + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  const goToday = () => setDayOffset(0);
+  const prev = () => setDayOffset(o => o - 1);
+  const next = () => setDayOffset(o => Math.min(0, o + 1));
+  return { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next };
+};
+
+const DayNav = ({ dateLabel, dayOffset, goToday, prev, next }) => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#F3F4F6", borderRadius: 12, padding: "8px 14px", marginBottom: 14 }}>
+    <button onClick={prev} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: "#6B7280" }}>◀</button>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontWeight: 700, fontSize: 14, color: "#374151" }}>{dateLabel}</span>
+      {dayOffset !== 0 && <button onClick={goToday} style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Aujourd'hui ↩</button>}
+    </div>
+    <button onClick={next} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: dayOffset === 0 ? "#D1D5DB" : "#6B7280" }} disabled={dayOffset === 0}>▶</button>
+  </div>
+);
+
 // ─── SECTION: Bottles ───
 const BottlesSection = ({ data, update }) => {
   const [modal, setModal] = useState(false);
-  const [amount, setAmount] = useState(120);
+  const [amount, setAmount] = useState("");
   const [time, setTime] = useState(nowStr());
   const [note, setNote] = useState("");
+  const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
   const quickAdd = (ml) => update(d => { d.bottles.push({ id: uid(), amount: ml, time: nowStr(), note: "" }); });
-  const add = () => { update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note }); }); setModal(false); setNote(""); };
+  const add = () => { if (!(Number(amount) > 0)) return; update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note }); }); setModal(false); setAmount(""); setNote(""); };
   const remove = (id) => update(d => { d.bottles = d.bottles.filter(b => b.id !== id); });
-  const todayB = (data.bottles||[]).filter(b => b.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
+  const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
   const olderB = (data.bottles||[]).filter(b => !b.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
-  const totalMl = todayB.reduce((s, b) => s + (b.amount || 0), 0);
+  const totalMl = dayB.reduce((s, b) => s + (b.amount || 0), 0);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+    <div ref={containerRef}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 900 }}>🍼 Biberons</div>
-          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>Aujourd'hui : {todayB.length} — {totalMl} ml</div>
+          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{dayB.length} biberon{dayB.length > 1 ? "s" : ""} — {totalMl} ml</div>
         </div>
         <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Détail</Btn>
       </div>
 
-      <div style={{ display: "flex", gap: 7, marginBottom: 18, flexWrap: "wrap" }}>
-        {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
-          <Btn key={ml} variant="secondary" small onClick={() => quickAdd(ml)}>{ml}ml</Btn>
-        ))}
-      </div>
+      <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
 
-      {todayB.length === 0 && <EmptyState emoji="🍼" text="Aucun biberon enregistré aujourd'hui" />}
-      {todayB.map(b => (
+      {dayOffset === 0 && (
+        <div style={{ display: "flex", gap: 7, marginBottom: 18, flexWrap: "wrap" }}>
+          {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
+            <Btn key={ml} variant="secondary" small onClick={() => quickAdd(ml)}>{ml}ml</Btn>
+          ))}
+        </div>
+      )}
+
+      {dayB.length === 0 && <EmptyState emoji="🍼" text={`Aucun biberon — ${dateLabel}`} />}
+      {dayB.map(b => (
         <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
           <div style={{ flex: 1 }}>
@@ -420,7 +470,7 @@ const BottlesSection = ({ data, update }) => {
         </Card>
       ))}
 
-      {olderB.length > 0 && (
+      {dayOffset === 0 && olderB.length > 0 && (
         <details style={{ marginTop: 14 }}>
           <summary style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", cursor: "pointer", padding: "8px 0" }}>Historique ({olderB.length})</summary>
           {olderB.slice(0, 50).map(b => (
@@ -434,7 +484,7 @@ const BottlesSection = ({ data, update }) => {
       )}
 
       <Modal open={modal} onClose={() => setModal(false)} title="Ajouter un biberon">
-        <Input label="Quantité (ml)" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
+        <Input label="Quantité (ml)" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="120" />
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Note (optionnel)" value={note} onChange={e => setNote(e.target.value)} placeholder="Refusé après 60ml..." />
         <Btn onClick={add} full style={{ marginTop: 4 }}>Enregistrer</Btn>
@@ -453,6 +503,7 @@ const DiapersSection = ({ data, update }) => {
   const [quantity, setQuantity] = useState(null);
   const [consistency, setConsistency] = useState(null);
   const [color, setColor] = useState(null);
+  const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
 
   const TYPE_EMOJIS = { pipi: "💦", caca: "💩", mixte: "🧷" };
   const TYPE_LABELS = { pipi: "Pipi", caca: "Caca", mixte: "Mixte" };
@@ -460,7 +511,7 @@ const DiapersSection = ({ data, update }) => {
   const resetFunnel = () => { setSelectedType(null); setQuantity(null); setConsistency(null); setColor(null); };
 
   const saveEntry = (t, q, cons, col) => {
-    const entry = { id: uid(), type: t, time: new Date().toISOString(), note: "" };
+    const entry = { id: uid(), type: t, time: nowStr(), note: "" };
     if (q) entry.quantity = q;
     if (cons) entry.consistency = cons;
     if (col) entry.color = col;
@@ -491,7 +542,7 @@ const DiapersSection = ({ data, update }) => {
 
   const add = () => { update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); }); setModal(false); setNote(""); };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
-  const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
+  const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
 
   const diapersLabel = (d) => {
     const parts = [TYPE_LABELS[d.type] || d.type];
@@ -505,83 +556,87 @@ const DiapersSection = ({ data, update }) => {
   const needCaca = selectedType === "caca" || selectedType === "mixte";
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+    <div ref={containerRef}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 900 }}>🧷 Couches</div>
-          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>Aujourd'hui : {todayD.length}</div>
+          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{todayD.length} couche{todayD.length > 1 ? "s" : ""}</div>
         </div>
         <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Détail</Btn>
       </div>
 
-      {/* Étape 1 : sélection du type */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-        {["pipi", "caca", "mixte"].map(t => (
-          <button key={t} onClick={() => handleTypeSelect(t)} style={{
-            flex: 1, padding: "14px 8px", borderRadius: 14,
-            border: `2px solid ${selectedType === t ? "#F59E0B" : "#E5E7EB"}`,
-            background: selectedType === t ? "#FEF3C7" : "#F9FAFB",
-            cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 4, fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+      <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
+
+      {/* Étapes 1 & 2 : saisie rapide (uniquement pour aujourd'hui) */}
+      {dayOffset === 0 && (
+        <>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            {["pipi", "caca", "mixte"].map(t => (
+              <button key={t} onClick={() => handleTypeSelect(t)} style={{
+                flex: 1, padding: "14px 8px", borderRadius: 14,
+                border: `2px solid ${selectedType === t ? "#F59E0B" : "#E5E7EB"}`,
+                background: selectedType === t ? "#FEF3C7" : "#F9FAFB",
+                cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
+                gap: 4, fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+              }}>
+                <span style={{ fontSize: 28 }}>{TYPE_EMOJIS[t]}</span>
+                {TYPE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+          <div style={{
+            overflow: "hidden", maxHeight: selectedType ? 320 : 0,
+            transition: "max-height 0.3s ease, opacity 0.3s ease",
+            opacity: selectedType ? 1 : 0, marginBottom: selectedType ? 16 : 0
           }}>
-            <span style={{ fontSize: 28 }}>{TYPE_EMOJIS[t]}</span>
-            {TYPE_LABELS[t]}
-          </button>
-        ))}
-      </div>
-
-      {/* Étape 2 : champs conditionnels inline */}
-      <div style={{
-        overflow: "hidden", maxHeight: selectedType ? 320 : 0,
-        transition: "max-height 0.3s ease, opacity 0.3s ease",
-        opacity: selectedType ? 1 : 0, marginBottom: selectedType ? 16 : 0
-      }}>
-        <div style={{ background: "#F9FAFB", borderRadius: 14, padding: 14, border: "1.5px solid #E5E7EB" }}>
-          {needPipi && (
-            <div style={{ marginBottom: needCaca ? 14 : 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Quantité 💦</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {["+", "++", "+++"].map(q => (
-                  <button key={q} onClick={() => handleQuantity(q)} style={{
-                    flex: 1, padding: "10px 0", borderRadius: 10,
-                    border: `2px solid ${quantity === q ? "#6366F1" : "#E5E7EB"}`,
-                    background: quantity === q ? "#EEF2FF" : "#fff",
-                    cursor: "pointer", fontWeight: 800, fontSize: 14, transition: "all 0.15s"
-                  }}>{q}</button>
-                ))}
-              </div>
+            <div style={{ background: "#F9FAFB", borderRadius: 14, padding: 14, border: "1.5px solid #E5E7EB" }}>
+              {needPipi && (
+                <div style={{ marginBottom: needCaca ? 14 : 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Quantité 💦</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["+", "++", "+++"].map(q => (
+                      <button key={q} onClick={() => handleQuantity(q)} style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10,
+                        border: `2px solid ${quantity === q ? "#6366F1" : "#E5E7EB"}`,
+                        background: quantity === q ? "#EEF2FF" : "#fff",
+                        cursor: "pointer", fontWeight: 800, fontSize: 14, transition: "all 0.15s"
+                      }}>{q}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {needCaca && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Consistance 💩</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    {["Dur", "Normal", "Liquide"].map(c => (
+                      <button key={c} onClick={() => handleConsistency(c)} style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10,
+                        border: `2px solid ${consistency === c ? "#F59E0B" : "#E5E7EB"}`,
+                        background: consistency === c ? "#FEF3C7" : "#fff",
+                        cursor: "pointer", fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+                      }}>{c}</button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Couleur</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["Normal", "Vert", "Jaune", "Noir"].map(c => (
+                      <button key={c} onClick={() => handleColor(c)} style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10,
+                        border: `2px solid ${color === c ? "#6B7280" : "#E5E7EB"}`,
+                        background: color === c ? "#F3F4F6" : "#fff",
+                        cursor: "pointer", fontWeight: 700, fontSize: 11, transition: "all 0.15s"
+                      }}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          {needCaca && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Consistance 💩</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                {["Dur", "Normal", "Liquide"].map(c => (
-                  <button key={c} onClick={() => handleConsistency(c)} style={{
-                    flex: 1, padding: "10px 0", borderRadius: 10,
-                    border: `2px solid ${consistency === c ? "#F59E0B" : "#E5E7EB"}`,
-                    background: consistency === c ? "#FEF3C7" : "#fff",
-                    cursor: "pointer", fontWeight: 700, fontSize: 13, transition: "all 0.15s"
-                  }}>{c}</button>
-                ))}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Couleur</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {["Normal", "Vert", "Jaune", "Noir"].map(c => (
-                  <button key={c} onClick={() => handleColor(c)} style={{
-                    flex: 1, padding: "10px 0", borderRadius: 10,
-                    border: `2px solid ${color === c ? "#6B7280" : "#E5E7EB"}`,
-                    background: color === c ? "#F3F4F6" : "#fff",
-                    cursor: "pointer", fontWeight: 700, fontSize: 11, transition: "all 0.15s"
-                  }}>{c}</button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
-      {todayD.length === 0 && <EmptyState emoji="🧷" text="Aucune couche enregistrée aujourd'hui" />}
+      {todayD.length === 0 && <EmptyState emoji="🧷" text={`Aucune couche — ${dateLabel}`} />}
       {todayD.map(d => (
         <Card key={d.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
@@ -611,26 +666,34 @@ const SleepSection = ({ data, update }) => {
   const [start, setStart] = useState(nowStr());
   const [end, setEnd] = useState("");
   const [type, setType] = useState("sieste");
+  const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
   const add = () => { update(d => { d.sleep.push({ id: uid(), start, end: end || null, type }); }); setModal(false); };
   const remove = (id) => update(d => { d.sleep = d.sleep.filter(x => x.id !== id); });
-  const sorted = [...(data.sleep||[])].sort((a, b) => b.start.localeCompare(a.start));
   const ongoing = (data.sleep||[]).find(s => !s.end);
+  const dayItems = [...(data.sleep||[])].filter(s => s.start?.startsWith(dateStr)).sort((a, b) => b.start.localeCompare(a.start));
   const dur = (s) => { if (!s.end) return "En cours 💤"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
 
   return (
-    <div>
-      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 16 }}>😴 Sommeil</div>
-
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-        {!ongoing ? (
-          <Btn variant="secondary" full onClick={() => update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: "sieste" }); })}>💤 Début sieste</Btn>
-        ) : (
-          <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })}>⏰ Fin sieste ({dur(ongoing)})</Btn>
-        )}
+    <div ref={containerRef}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>😴 Sommeil</div>
         <Btn onClick={() => { setStart(nowStr()); setEnd(""); setModal(true); }} small>+ Manuel</Btn>
       </div>
 
-      {sorted.slice(0, 30).map(s => (
+      <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
+
+      {dayOffset === 0 && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+          {!ongoing ? (
+            <Btn variant="secondary" full onClick={() => update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: "sieste" }); })}>💤 Début sieste</Btn>
+          ) : (
+            <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })}>⏰ Fin sieste ({dur(ongoing)})</Btn>
+          )}
+        </div>
+      )}
+
+      {dayItems.length === 0 && <EmptyState emoji="😴" text={`Aucune sieste — ${dateLabel}`} />}
+      {dayItems.map(s => (
         <Card key={s.id} highlighted={!s.end} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? "💤" : s.type === "nuit" ? "🌙" : "😴"}</span>
           <div style={{ flex: 1 }}>
@@ -1072,19 +1135,23 @@ const BathsSection = ({ data, update }) => {
   const [time, setTime] = useState(nowStr());
   const [temp, setTemp] = useState("37");
   const [note, setNote] = useState("");
+  const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
   const add = () => { update(d => { d.baths.push({ id: uid(), time, temp: Number(temp), note }); }); setModal(false); setNote(""); };
   const remove = (id) => update(d => { d.baths = d.baths.filter(x => x.id !== id); });
-  const sorted = [...(data.baths||[])].sort((a, b) => b.time.localeCompare(a.time));
+  const dayBaths = [...(data.baths||[])].filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+    <div ref={containerRef}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 900 }}>🛁 Bains</div>
         <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Ajouter</Btn>
       </div>
-      <Btn variant="secondary" full onClick={() => update(d => { d.baths.push({ id: uid(), time: nowStr(), temp: 37, note: "" }); })} style={{ marginBottom: 16 }}>🛁 Bain maintenant (37°C)</Btn>
-      {sorted.length === 0 && <EmptyState emoji="🛁" text="Aucun bain enregistré" />}
-      {sorted.map(b => (
+      <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
+      {dayOffset === 0 && (
+        <Btn variant="secondary" full onClick={() => update(d => { d.baths.push({ id: uid(), time: nowStr(), temp: 37, note: "" }); })} style={{ marginBottom: 16 }}>🛁 Bain maintenant (37°C)</Btn>
+      )}
+      {dayBaths.length === 0 && <EmptyState emoji="🛁" text={`Aucun bain — ${dateLabel}`} />}
+      {dayBaths.map(b => (
         <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontSize: 22, marginRight: 14 }}>🛁</span>
           <div style={{ flex: 1 }}>
