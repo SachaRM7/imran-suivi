@@ -1391,13 +1391,14 @@ const PdfSection = ({ data }) => {
       return { d, label, bottles: bs.length, ml: totalMl, diapers: ds.length, sleep: ss.length, sleepMin: totalSleep };
     });
 
-    const weekBottles = (data.bottles||[]).filter(b => b.time >= week.start && b.time <= week.end + "T23:59");
-    const weekDiapers = (data.diapers||[]).filter(x => x.time >= week.start && x.time <= week.end + "T23:59");
-    const weekSleep   = (data.sleep||[]).filter(s => (s.start||"") >= week.start && (s.start||"") <= week.end + "T23:59");
-    const weekMeds    = (data.medicines||[]).filter(m => m.time >= week.start && m.time <= week.end + "T23:59");
-    const weekTemp    = (data.temperature||[]).filter(t => t.time >= week.start && t.time <= week.end + "T23:59");
-    const weekBaths   = (data.baths||[]).filter(b => b.time >= week.start && b.time <= week.end + "T23:59");
-    const weekNotes   = (data.notes||[]).filter(n => n.date >= week.start && n.date <= week.end);
+    const inWeek = (ts) => ts && ts.slice(0, 10) >= week.start && ts.slice(0, 10) <= week.end;
+    const weekBottles = (data.bottles||[]).filter(b => inWeek(b.time));
+    const weekDiapers = (data.diapers||[]).filter(x => inWeek(x.time));
+    const weekSleep   = (data.sleep||[]).filter(s => inWeek(s.start));
+    const weekMeds    = (data.medicines||[]).filter(m => inWeek(m.time));
+    const weekTemp    = (data.temperature||[]).filter(t => inWeek(t.time));
+    const weekBaths   = (data.baths||[]).filter(b => inWeek(b.time));
+    const weekNotes   = (data.notes||[]).filter(n => inWeek(n.date));
 
     const avgMl = Math.round(weekBottles.reduce((s,b)=>s+(b.amount||0),0) / 7);
     const pipi = weekDiapers.filter(d=>d.type==="pipi").length;
@@ -1688,6 +1689,11 @@ const sanitize = (val) => {
   ["foods","teeth","vaccines","milestonesChecked"].forEach(k => {
     if (!merged[k] || typeof merged[k] !== "object" || Array.isArray(merged[k])) merged[k] = {};
   });
+  // Normalise chaque routine : garantit que items est un tableau
+  merged.routines = merged.routines.map(r => ({
+    ...r,
+    items: Array.isArray(r.items) ? r.items.map(item => ({ checked: false, note: "", ...item })) : []
+  }));
   return merged;
 };
 
