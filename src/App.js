@@ -446,14 +446,63 @@ const BottlesSection = ({ data, update }) => {
 // ─── SECTION: Diapers ───
 const DiapersSection = ({ data, update }) => {
   const [modal, setModal] = useState(false);
-  const [type, setType] = useState("pipi");
+  const [modalType, setModalType] = useState("pipi");
   const [time, setTime] = useState(nowStr());
   const [note, setNote] = useState("");
-  const emojis = { pipi: "💧", caca: "💩", mixte: "💧💩" };
-  const quickAdd = (t) => update(d => { d.diapers.push({ id: uid(), type: t, time: nowStr(), note: "" }); });
-  const add = () => { update(d => { d.diapers.push({ id: uid(), type, time, note }); }); setModal(false); setNote(""); };
+  const [selectedType, setSelectedType] = useState(null);
+  const [quantity, setQuantity] = useState(null);
+  const [consistency, setConsistency] = useState(null);
+  const [color, setColor] = useState(null);
+
+  const TYPE_EMOJIS = { pipi: "💦", caca: "💩", mixte: "🧷" };
+  const TYPE_LABELS = { pipi: "Pipi", caca: "Caca", mixte: "Mixte" };
+
+  const resetFunnel = () => { setSelectedType(null); setQuantity(null); setConsistency(null); setColor(null); };
+
+  const saveEntry = (t, q, cons, col) => {
+    const entry = { id: uid(), type: t, time: new Date().toISOString(), note: "" };
+    if (q) entry.quantity = q;
+    if (cons) entry.consistency = cons;
+    if (col) entry.color = col;
+    update(d => { d.diapers.push(entry); });
+    resetFunnel();
+  };
+
+  const handleTypeSelect = (t) => { setSelectedType(t); setQuantity(null); setConsistency(null); setColor(null); };
+
+  const handleQuantity = (q) => {
+    if (selectedType === "pipi") { saveEntry("pipi", q, null, null); return; }
+    const newQ = q;
+    if (selectedType === "mixte" && consistency && color) { saveEntry("mixte", newQ, consistency, color); return; }
+    setQuantity(newQ);
+  };
+
+  const handleConsistency = (cons) => {
+    if (selectedType === "caca" && color) { saveEntry("caca", null, cons, color); return; }
+    if (selectedType === "mixte" && quantity && color) { saveEntry("mixte", quantity, cons, color); return; }
+    setConsistency(cons);
+  };
+
+  const handleColor = (col) => {
+    if (selectedType === "caca" && consistency) { saveEntry("caca", null, consistency, col); return; }
+    if (selectedType === "mixte" && quantity && consistency) { saveEntry("mixte", quantity, consistency, col); return; }
+    setColor(col);
+  };
+
+  const add = () => { update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); }); setModal(false); setNote(""); };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
   const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
+
+  const diapersLabel = (d) => {
+    const parts = [TYPE_LABELS[d.type] || d.type];
+    if (d.quantity) parts.push(d.quantity);
+    if (d.consistency) parts.push(d.consistency);
+    if (d.color) parts.push(d.color);
+    return parts.join(" · ");
+  };
+
+  const needPipi = selectedType === "pipi" || selectedType === "mixte";
+  const needCaca = selectedType === "caca" || selectedType === "mixte";
 
   return (
     <div>
@@ -465,18 +514,79 @@ const DiapersSection = ({ data, update }) => {
         <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Détail</Btn>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+      {/* Étape 1 : sélection du type */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
         {["pipi", "caca", "mixte"].map(t => (
-          <Btn key={t} variant="secondary" onClick={() => quickAdd(t)} style={{ flex: 1 }}>{emojis[t]} {t}</Btn>
+          <button key={t} onClick={() => handleTypeSelect(t)} style={{
+            flex: 1, padding: "14px 8px", borderRadius: 14,
+            border: `2px solid ${selectedType === t ? "#F59E0B" : "#E5E7EB"}`,
+            background: selectedType === t ? "#FEF3C7" : "#F9FAFB",
+            cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 4, fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+          }}>
+            <span style={{ fontSize: 28 }}>{TYPE_EMOJIS[t]}</span>
+            {TYPE_LABELS[t]}
+          </button>
         ))}
+      </div>
+
+      {/* Étape 2 : champs conditionnels inline */}
+      <div style={{
+        overflow: "hidden", maxHeight: selectedType ? 320 : 0,
+        transition: "max-height 0.3s ease, opacity 0.3s ease",
+        opacity: selectedType ? 1 : 0, marginBottom: selectedType ? 16 : 0
+      }}>
+        <div style={{ background: "#F9FAFB", borderRadius: 14, padding: 14, border: "1.5px solid #E5E7EB" }}>
+          {needPipi && (
+            <div style={{ marginBottom: needCaca ? 14 : 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Quantité 💦</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["+", "++", "+++"].map(q => (
+                  <button key={q} onClick={() => handleQuantity(q)} style={{
+                    flex: 1, padding: "10px 0", borderRadius: 10,
+                    border: `2px solid ${quantity === q ? "#6366F1" : "#E5E7EB"}`,
+                    background: quantity === q ? "#EEF2FF" : "#fff",
+                    cursor: "pointer", fontWeight: 800, fontSize: 14, transition: "all 0.15s"
+                  }}>{q}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {needCaca && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Consistance 💩</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {["Dur", "Normal", "Liquide"].map(c => (
+                  <button key={c} onClick={() => handleConsistency(c)} style={{
+                    flex: 1, padding: "10px 0", borderRadius: 10,
+                    border: `2px solid ${consistency === c ? "#F59E0B" : "#E5E7EB"}`,
+                    background: consistency === c ? "#FEF3C7" : "#fff",
+                    cursor: "pointer", fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+                  }}>{c}</button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Couleur</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["Normal", "Vert", "Jaune", "Noir"].map(c => (
+                  <button key={c} onClick={() => handleColor(c)} style={{
+                    flex: 1, padding: "10px 0", borderRadius: 10,
+                    border: `2px solid ${color === c ? "#6B7280" : "#E5E7EB"}`,
+                    background: color === c ? "#F3F4F6" : "#fff",
+                    cursor: "pointer", fontWeight: 700, fontSize: 11, transition: "all 0.15s"
+                  }}>{c}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {todayD.length === 0 && <EmptyState emoji="🧷" text="Aucune couche enregistrée aujourd'hui" />}
       {todayD.map(d => (
         <Card key={d.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 22, marginRight: 14 }}>{emojis[d.type]}</span>
+          <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, textTransform: "capitalize" }}>{d.type}</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{diapersLabel(d)}</div>
             <div style={{ fontSize: 12, color: "#9CA3AF" }}>{fmtTime(d.time)}{d.note ? ` · ${d.note}` : ""}</div>
           </div>
           <IconBtn onClick={() => remove(d.id)}>🗑</IconBtn>
@@ -485,7 +595,7 @@ const DiapersSection = ({ data, update }) => {
 
       <Modal open={modal} onClose={() => setModal(false)} title="Couche">
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-          {["pipi", "caca", "mixte"].map(t => <Chip key={t} active={type === t} onClick={() => setType(t)} color="#F59E0B">{emojis[t]} {t}</Chip>)}
+          {["pipi", "caca", "mixte"].map(t => <Chip key={t} active={modalType === t} onClick={() => setModalType(t)} color="#F59E0B">{TYPE_EMOJIS[t]} {TYPE_LABELS[t]}</Chip>)}
         </div>
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Note" value={note} onChange={e => setNote(e.target.value)} placeholder="Couleur, consistance..." />
@@ -1065,7 +1175,7 @@ const PdfSection = ({ data }) => {
     if (todayDiapers.length > 0) {
       sections += `<h3>🧷 Couches — ${todayDiapers.length} au total</h3>
       <table><tr><th>Heure</th><th>Type</th><th>Note</th></tr>
-      ${todayDiapers.map(d => `<tr><td>${fmtTime(d.time)}</td><td>${d.type}</td><td>${d.note || "—"}</td></tr>`).join("")}
+      ${todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return `<tr><td>${fmtTime(d.time)}</td><td>${d.type}${details ? ` · ${details}` : ""}</td><td>${d.note || "—"}</td></tr>`; }).join("")}
       </table>`;
     }
     if (todaySleep.length > 0) {
@@ -1145,7 +1255,7 @@ ${sections}
       {todayDiapers.length > 0 && (
         <Card style={{ marginBottom: 10 }}>
           <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🧷 Couches — {todayDiapers.length}</div>
-          {todayDiapers.map(d => <div key={d.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(d.time)} — {d.type}{d.note ? ` (${d.note})` : ""}</div>)}
+          {todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return <div key={d.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(d.time)} — {d.type}{details ? ` · ${details}` : ""}{d.note ? ` (${d.note})` : ""}</div>; })}
         </Card>
       )}
       {todaySleep.length > 0 && (
