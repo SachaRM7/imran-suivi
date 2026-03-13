@@ -176,6 +176,7 @@ const defaultState = () => ({
   baths: [],
   vaccines: {},
   temperature: [],
+  routines: [],
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -357,6 +358,7 @@ const DashboardHome = ({ data, goTo }) => {
     { key: "temperature", emoji: "🌡️", label: "Température", value: (data.temperature||[]).length ? `${data.temperature[data.temperature.length-1].value}°C` : "—", color: "#F97316" },
     { key: "baths", emoji: "🛁", label: "Bains", value: `${todayItems(data.baths).length} aujourd'hui`, color: "#06B6D4" },
     { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
+    { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
 
@@ -1456,13 +1458,173 @@ const SetupScreen = ({ onComplete }) => {
 const sanitize = (val) => {
   const def = defaultState();
   const merged = { ...def, ...(val || {}) };
-  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature"].forEach(k => {
+  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
   ["foods","teeth","vaccines","milestonesChecked"].forEach(k => {
     if (!merged[k] || typeof merged[k] !== "object" || Array.isArray(merged[k])) merged[k] = {};
   });
   return merged;
+};
+
+// ─── SECTION: Routines ───
+const RoutinesSection = ({ data, update }) => {
+  const [selected, setSelected] = useState(null);
+  const [createModal, setCreateModal] = useState(false);
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("🌅");
+  const [items, setItems] = useState([]);
+  const [newItem, setNewItem] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const EMOJIS = ["🌅", "🌙", "🍽️", "🛁", "💊", "🏋️", "📖", "🎮"];
+  const routines = data.routines || [];
+
+  const resetIfNeeded = (id) => {
+    update(d => {
+      const r = (d.routines||[]).find(x => x.id === id);
+      if (r && r.lastResetDate !== todayStr()) {
+        r.items.forEach(item => { item.checked = false; item.note = ""; });
+        r.lastResetDate = todayStr();
+      }
+    });
+  };
+
+  const openDetail = (id) => { resetIfNeeded(id); setSelected(id); };
+
+  const createRoutine = () => {
+    if (!name.trim()) return;
+    update(d => {
+      if (!d.routines) d.routines = [];
+      d.routines.push({ id: uid(), name: name.trim(), emoji, items: items.map(label => ({ id: uid(), label, checked: false, note: "" })), createdAt: nowStr(), lastResetDate: todayStr(), lastUsed: null });
+    });
+    setCreateModal(false); setName(""); setEmoji("🌅"); setItems([]);
+  };
+
+  const toggleCheck = (routineId, itemId) => {
+    update(d => {
+      const r = (d.routines||[]).find(x => x.id === routineId);
+      if (r) { const item = r.items.find(x => x.id === itemId); if (item) { item.checked = !item.checked; r.lastUsed = nowStr(); } }
+    });
+  };
+
+  const setItemNote = (routineId, itemId, note) => {
+    update(d => {
+      const r = (d.routines||[]).find(x => x.id === routineId);
+      if (r) { const item = r.items.find(x => x.id === itemId); if (item) item.note = note; }
+    });
+  };
+
+  const resetAll = (routineId) => {
+    update(d => {
+      const r = (d.routines||[]).find(x => x.id === routineId);
+      if (r) { r.items.forEach(item => { item.checked = false; item.note = ""; }); r.lastResetDate = todayStr(); }
+    });
+  };
+
+  const deleteRoutine = (id) => {
+    update(d => { d.routines = (d.routines||[]).filter(x => x.id !== id); });
+    if (selected === id) setSelected(null);
+    setConfirmDelete(null);
+  };
+
+  const selectedRoutine = routines.find(r => r.id === selected);
+
+  if (selected && selectedRoutine) {
+    const done = selectedRoutine.items.filter(i => i.checked).length;
+    const total = selectedRoutine.items.length;
+    return (
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{selectedRoutine.emoji} {selectedRoutine.name}</div>
+            <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{done}/{total} complété{done > 1 ? "s" : ""}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn small variant="secondary" onClick={() => resetAll(selected)}>↺ Réinit.</Btn>
+            <Btn small variant="secondary" onClick={() => setSelected(null)}>← Retour</Btn>
+          </div>
+        </div>
+        <div style={{ background: "#F3F4F6", borderRadius: 10, height: 6, marginBottom: 18, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: total ? `${(done/total)*100}%` : "0%", background: "linear-gradient(90deg, #7C3AED, #6366F1)", borderRadius: 10, transition: "width .4s" }} />
+        </div>
+        {selectedRoutine.items.map(item => (
+          <Card key={item.id} style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div onClick={() => toggleCheck(selected, item.id)} style={{ width: 24, height: 24, borderRadius: 8, border: `2px solid ${item.checked ? "#7C3AED" : "#D1D5DB"}`, background: item.checked ? "#7C3AED" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all .15s" }}>
+                {item.checked && <span style={{ color: "#fff", fontSize: 13, lineHeight: 1 }}>✓</span>}
+              </div>
+              <span style={{ fontWeight: 700, fontSize: 14, flex: 1, textDecoration: item.checked ? "line-through" : "none", color: item.checked ? "#9CA3AF" : "#1F2937" }}>{item.label}</span>
+            </div>
+            <input value={item.note || ""} onChange={e => setItemNote(selected, item.id, e.target.value)} placeholder="Note (optionnel)..." style={{ marginTop: 8, width: "100%", background: "none", border: "none", borderBottom: "1px solid #F3F4F6", fontSize: 12, color: "#6B7280", outline: "none", padding: "4px 0", boxSizing: "border-box" }} />
+          </Card>
+        ))}
+        {total === 0 && <EmptyState emoji="📋" text="Aucune action dans cette routine" />}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>📋 Routines</div>
+        <Btn small onClick={() => { setName(""); setEmoji("🌅"); setItems([]); setNewItem(""); setCreateModal(true); }}>+ Nouvelle</Btn>
+      </div>
+      {routines.length === 0 && <EmptyState emoji="📋" text="Aucune routine créée" />}
+      {routines.map(r => {
+        const done = r.lastResetDate === todayStr() ? r.items.filter(i => i.checked).length : 0;
+        const total = r.items.length;
+        return (
+          <Card key={r.id} style={{ marginBottom: 10, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center" }} onClick={() => openDetail(r.id)}>
+              <span style={{ fontSize: 28, marginRight: 14 }}>{r.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>{r.name}</div>
+                <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{done}/{total} ✓ aujourd'hui</div>
+                {total > 0 && (
+                  <div style={{ background: "#F3F4F6", borderRadius: 6, height: 4, marginTop: 6, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(done/total)*100}%`, background: "#7C3AED", borderRadius: 6, transition: "width .4s" }} />
+                  </div>
+                )}
+              </div>
+              {confirmDelete === r.id ? (
+                <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
+                  <Btn small onClick={() => deleteRoutine(r.id)} style={{ background: "#EF4444", color: "#fff" }}>Supprimer</Btn>
+                  <Btn small variant="secondary" onClick={() => setConfirmDelete(null)}>Annuler</Btn>
+                </div>
+              ) : (
+                <IconBtn onClick={e => { e.stopPropagation(); setConfirmDelete(r.id); }}>🗑</IconBtn>
+              )}
+            </div>
+          </Card>
+        );
+      })}
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Nouvelle routine">
+        <Input label="Nom" value={name} onChange={e => setName(e.target.value)} placeholder="Routine du matin..." />
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>Emoji</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {EMOJIS.map(e => (
+              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize: 22, padding: "6px 10px", borderRadius: 10, border: `2px solid ${emoji === e ? "#7C3AED" : "#E5E7EB"}`, background: emoji === e ? "#EDE9FE" : "#fff", cursor: "pointer" }}>{e}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>Actions</div>
+          {items.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</span>
+              <IconBtn onClick={() => setItems(items.filter((_, j) => j !== i))}>🗑</IconBtn>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }} placeholder="Ex : Vitamine D..." style={{ flex: 1, border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "8px 12px", fontSize: 13, outline: "none" }} />
+            <Btn small onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}>+ Ajouter</Btn>
+          </div>
+        </div>
+        <Btn onClick={createRoutine} full>Créer la routine</Btn>
+      </Modal>
+    </div>
+  );
 };
 
 // ═══════════════════════════════════════
@@ -1547,6 +1709,7 @@ export default function App() {
     temperature: <TemperatureSection data={data} update={update} />,
     baths: <BathsSection data={data} update={update} />,
     notes: <NotesSection data={data} update={update} />,
+    routines: <RoutinesSection data={data} update={update} />,
     pdf: <PdfSection data={data} />,
   };
 
