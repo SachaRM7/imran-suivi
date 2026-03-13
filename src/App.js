@@ -1,5 +1,21 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import { subscribeToData, saveData } from "./firebase";
+
+// ─── Theme system ───
+const THEMES = {
+  light: {
+    bg: "#FAFAF9", card: "#fff", border: "#F3F4F6", text: "#1F2937",
+    textMuted: "#9CA3AF", subtle: "#F9FAFB", input: "#fff", inputBorder: "#E5E7EB",
+    navBg: "#fff", navBorder: "#F3F4F6", dayNavBg: "#F3F4F6", headerBg: "#FAFAF9",
+  },
+  dark: {
+    bg: "#0F0F14", card: "#1A1A24", border: "#2D2D3A", text: "#F1F0F5",
+    textMuted: "#6B7280", subtle: "#1F1F2E", input: "#1F1F2E", inputBorder: "#3D3D50",
+    navBg: "#1A1A24", navBorder: "#2D2D3A", dayNavBg: "#1F1F2E", headerBg: "#0F0F14",
+  },
+};
+const ThemeContext = createContext({ theme: THEMES.light, darkMode: false, toggleDark: () => {} });
+const useTheme = () => useContext(ThemeContext);
 
 /* ═══════════════════════════════════════════════════════
    BABY TRACKER & DEVELOPMENT DASHBOARD
@@ -227,31 +243,36 @@ input, textarea, select { font-family: 'Nunito', sans-serif; }
 
 // ─── Reusable Components ───
 const Modal = ({ open, onClose, title, children }) => {
+  const { theme } = useTheme();
   if (!open) return null;
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 500, maxHeight: "88vh", overflow: "auto", padding: "20px 20px 36px", boxShadow: "0 -10px 50px rgba(0,0,0,0.15)", animation: "slideUp .3s cubic-bezier(.16,1,.3,1)" }}>
-        <div style={{ width: 36, height: 4, background: "#E5E7EB", borderRadius: 4, margin: "0 auto 18px" }} />
-        {title && <h3 style={{ margin: "0 0 18px", fontSize: 19, fontWeight: 800 }}>{title}</h3>}
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: theme.card, borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 500, maxHeight: "88vh", overflow: "auto", padding: "20px 20px 36px", boxShadow: "0 -10px 50px rgba(0,0,0,0.25)", animation: "slideUp .3s cubic-bezier(.16,1,.3,1)" }}>
+        <div style={{ width: 36, height: 4, background: theme.border, borderRadius: 4, margin: "0 auto 18px" }} />
+        {title && <h3 style={{ margin: "0 0 18px", fontSize: 19, fontWeight: 800, color: theme.text }}>{title}</h3>}
         {children}
       </div>
     </div>
   );
 };
 
-const Input = ({ label, ...props }) => (
-  <div style={{ marginBottom: 14 }}>
-    {label && <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
-    <input {...props} style={{ width: "100%", padding: "11px 14px", borderRadius: 14, border: "2px solid #E5E7EB", fontSize: 15, outline: "none", boxSizing: "border-box", transition: "border-color .2s, box-shadow .2s", ...props.style }}
-      onFocus={e => { e.target.style.borderColor = "#A78BFA"; e.target.style.boxShadow = "0 0 0 3px rgba(167,139,250,0.15)"; }}
-      onBlur={e => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
-  </div>
-);
+const Input = ({ label, ...props }) => {
+  const { theme } = useTheme();
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
+      <input {...props} style={{ width: "100%", padding: "11px 14px", borderRadius: 14, border: `2px solid ${theme.inputBorder}`, fontSize: 15, outline: "none", boxSizing: "border-box", background: theme.input, color: theme.text, transition: "border-color .2s, box-shadow .2s", ...props.style }}
+        onFocus={e => { e.target.style.borderColor = "#A78BFA"; e.target.style.boxShadow = "0 0 0 3px rgba(167,139,250,0.15)"; }}
+        onBlur={e => { e.target.style.borderColor = theme.inputBorder; e.target.style.boxShadow = "none"; }} />
+    </div>
+  );
+};
 
 const Btn = ({ children, variant = "primary", small, full, ...props }) => {
+  const { theme } = useTheme();
   const styles = {
     primary: { background: "linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)", color: "#fff", boxShadow: "0 4px 14px rgba(129,140,248,0.35)" },
-    secondary: { background: "#F5F3FF", color: "#7C3AED", boxShadow: "none" },
+    secondary: { background: theme.subtle, color: "#7C3AED", boxShadow: "none" },
     danger: { background: "#FEF2F2", color: "#DC2626", boxShadow: "none" },
     success: { background: "#ECFDF5", color: "#059669", boxShadow: "none" },
     ghost: { background: "transparent", color: "#7C3AED", boxShadow: "none" },
@@ -273,31 +294,37 @@ const Btn = ({ children, variant = "primary", small, full, ...props }) => {
   );
 };
 
-const Chip = ({ children, active, onClick, color = "#A78BFA" }) => (
-  <span onClick={onClick} style={{
-    display: "inline-flex", alignItems: "center", padding: "7px 14px", borderRadius: 20,
-    fontSize: 13, fontWeight: 700, cursor: onClick ? "pointer" : "default",
-    background: active ? color : "#F9FAFB", color: active ? "#fff" : "#6B7280",
-    border: active ? "none" : "1.5px solid #E5E7EB", transition: "all .2s", whiteSpace: "nowrap"
-  }}>{children}</span>
-);
+const Chip = ({ children, active, onClick, color = "#A78BFA" }) => {
+  const { theme } = useTheme();
+  return (
+    <span onClick={onClick} style={{
+      display: "inline-flex", alignItems: "center", padding: "7px 14px", borderRadius: 20,
+      fontSize: 13, fontWeight: 700, cursor: onClick ? "pointer" : "default",
+      background: active ? color : theme.subtle, color: active ? "#fff" : theme.textMuted,
+      border: active ? "none" : `1.5px solid ${theme.border}`, transition: "all .2s", whiteSpace: "nowrap"
+    }}>{children}</span>
+  );
+};
 
-const Card = ({ children, onClick, highlighted, style: s }) => (
-  <div onClick={onClick} style={{
-    background: "#fff", borderRadius: 18, padding: "14px 16px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: highlighted ? "2px solid #C4B5FD" : "1.5px solid #F3F4F6",
-    transition: "transform .15s, box-shadow .15s", cursor: onClick ? "pointer" : "default",
-    ...(s || {})
-  }}
-    onMouseEnter={e => onClick && (e.currentTarget.style.transform = "translateY(-1px)")}
-    onMouseLeave={e => onClick && (e.currentTarget.style.transform = "")}
-  >{children}</div>
-);
+const Card = ({ children, onClick, highlighted, style: s }) => {
+  const { theme } = useTheme();
+  return (
+    <div onClick={onClick} style={{
+      background: theme.card, borderRadius: 18, padding: "14px 16px",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: highlighted ? "2px solid #C4B5FD" : `1.5px solid ${theme.border}`,
+      transition: "transform .15s, box-shadow .15s", cursor: onClick ? "pointer" : "default",
+      ...(s || {})
+    }}
+      onMouseEnter={e => onClick && (e.currentTarget.style.transform = "translateY(-1px)")}
+      onMouseLeave={e => onClick && (e.currentTarget.style.transform = "")}
+    >{children}</div>
+  );
+};
 
 const IconBtn = ({ onClick, children }) => (
-  <span onClick={onClick} style={{ cursor: "pointer", color: "#D1D5DB", display: "inline-flex", padding: 4, borderRadius: 8, transition: "color .15s" }}
+  <span onClick={onClick} style={{ cursor: "pointer", color: "#6B7280", display: "inline-flex", padding: 4, borderRadius: 8, transition: "color .15s" }}
     onMouseEnter={e => e.currentTarget.style.color = "#EF4444"}
-    onMouseLeave={e => e.currentTarget.style.color = "#D1D5DB"}
+    onMouseLeave={e => e.currentTarget.style.color = "#6B7280"}
   >{children}</span>
 );
 
@@ -308,15 +335,19 @@ const SyncBadge = ({ syncing }) => (
   </div>
 );
 
-const EmptyState = ({ emoji, text }) => (
-  <div style={{ textAlign: "center", padding: "40px 20px", color: "#9CA3AF" }}>
-    <div style={{ fontSize: 40, marginBottom: 8 }}>{emoji}</div>
-    <div style={{ fontSize: 14, fontWeight: 600 }}>{text}</div>
-  </div>
-);
+const EmptyState = ({ emoji, text }) => {
+  const { theme } = useTheme();
+  return (
+    <div style={{ textAlign: "center", padding: "40px 20px", color: theme.textMuted }}>
+      <div style={{ fontSize: 40, marginBottom: 8 }}>{emoji}</div>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{text}</div>
+    </div>
+  );
+};
 
 // ─── SECTION: Dashboard Home ───
 const DashboardHome = ({ data, goTo }) => {
+  const { darkMode, toggleDark } = useTheme();
   const age = babyAgeText(data.baby.birthDate);
   const todayB = todayItems(data.bottles);
   const todayD = todayItems(data.diapers);
@@ -368,6 +399,9 @@ const DashboardHome = ({ data, goTo }) => {
       <div style={{ background: "linear-gradient(135deg, #C4B5FD 0%, #A78BFA 35%, #818CF8 70%, #6366F1 100%)", borderRadius: 28, padding: "28px 24px 24px", marginBottom: 20, color: "#fff", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }} />
         <div style={{ position: "absolute", bottom: -25, left: 20, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
+        <button onClick={toggleDark} style={{ position: "absolute", top: 14, right: 16, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>
+          {darkMode ? "☀️" : "🌙"}
+        </button>
         <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
           {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
         </div>
@@ -440,16 +474,19 @@ const useSwipeDay = () => {
   return { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next };
 };
 
-const DayNav = ({ dateLabel, dayOffset, goToday, prev, next }) => (
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#F3F4F6", borderRadius: 12, padding: "8px 14px", marginBottom: 14 }}>
-    <button onClick={prev} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: "#6B7280" }}>◀</button>
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontWeight: 700, fontSize: 14, color: "#374151" }}>{dateLabel}</span>
-      {dayOffset !== 0 && <button onClick={goToday} style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Aujourd'hui ↩</button>}
+const DayNav = ({ dateLabel, dayOffset, goToday, prev, next }) => {
+  const { theme } = useTheme();
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.dayNavBg, borderRadius: 12, padding: "8px 14px", marginBottom: 14 }}>
+      <button onClick={prev} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: theme.textMuted }}>◀</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{dateLabel}</span>
+        {dayOffset !== 0 && <button onClick={goToday} style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Aujourd'hui ↩</button>}
+      </div>
+      <button onClick={next} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: dayOffset === 0 ? theme.border : theme.textMuted }} disabled={dayOffset === 0}>▶</button>
     </div>
-    <button onClick={next} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: dayOffset === 0 ? "#D1D5DB" : "#6B7280" }} disabled={dayOffset === 0}>▶</button>
-  </div>
-);
+  );
+};
 
 // ─── SECTION: Bottles ───
 const BottlesSection = ({ data, update }) => {
@@ -1865,8 +1902,18 @@ export default function App() {
   const [section, setSection] = useState("home");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem("darkMode") === "true"; } catch { return false; }
+  });
   const saveTimer = useRef(null);
   const ignoreNext = useRef(false);
+
+  useEffect(() => {
+    try { localStorage.setItem("darkMode", darkMode); } catch {}
+  }, [darkMode]);
+
+  const theme = darkMode ? THEMES.dark : THEMES.light;
+  const toggleDark = () => setDarkMode(d => !d);
 
   // Subscribe to Firebase real-time updates
   useEffect(() => {
@@ -1952,23 +1999,23 @@ export default function App() {
   ];
 
   return (
-    <>
+    <ThemeContext.Provider value={{ theme, darkMode, toggleDark }}>
       <style>{CSS}</style>
       <SyncBadge syncing={syncing} />
 
-      <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: "#FAFAF9", paddingBottom: 80 }}>
+      <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: theme.bg, paddingBottom: 80, transition: "background .2s" }}>
         {section !== "home" && (
-          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: "#FAFAF9", position: "sticky", top: 0, zIndex: 100 }}>
-            <span style={{ fontWeight: 800, fontSize: 15, color: "#374151" }}>{data.baby.name}</span>
+          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: theme.headerBg, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${theme.border}` }}>
+            <span style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{data.baby.name}</span>
           </div>
         )}
 
         <div style={{ padding: "0 14px" }}>
-          {SECTIONS[section] || <DashboardHome data={data} goTo={setSection} />}
+          {SECTIONS[section] || <DashboardHome data={data} goTo={setSection} toggleDark={toggleDark} />}
         </div>
 
         {/* Bottom nav */}
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#fff", borderTop: "1.5px solid #F3F4F6", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "8px 0 20px", zIndex: 200 }}>
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: theme.navBg, borderTop: `1.5px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "8px 0 20px", zIndex: 200, transition: "background .2s" }}>
           {navItems.map(n => {
             if (n.key === "home") return (
               <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -15 }}>
@@ -1978,7 +2025,7 @@ export default function App() {
               </div>
             );
             return (
-              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, cursor: "pointer", color: section === n.key ? "#7C3AED" : "#9CA3AF", transition: "color .2s", padding: "4px 8px" }}>
+              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, cursor: "pointer", color: section === n.key ? "#7C3AED" : theme.textMuted, transition: "color .2s", padding: "4px 8px" }}>
                 <span style={{ fontSize: 20, transition: "transform .15s", transform: section === n.key ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
                 <span style={{ fontSize: 10, fontWeight: 800 }}>{n.label}</span>
               </div>
@@ -1986,6 +2033,6 @@ export default function App() {
           })}
         </div>
       </div>
-    </>
+    </ThemeContext.Provider>
   );
 }
