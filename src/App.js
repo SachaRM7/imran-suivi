@@ -1499,9 +1499,9 @@ export default function App() {
   };
 
   const navItems = [
-    { key: "home", emoji: "🏠", label: "Accueil" },
     { key: "bottles", emoji: "🍼", label: "Biberons" },
     { key: "food", emoji: "🥕", label: "Aliments" },
+    { key: "home", emoji: "🏠", label: null },
     { key: "milestones", emoji: "🏆", label: "Étapes" },
     { key: "notes", emoji: "📝", label: "Journal" },
   ];
@@ -1513,8 +1513,7 @@ export default function App() {
 
       <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: "#FAFAF9", paddingBottom: 80 }}>
         {section !== "home" && (
-          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", gap: 10, background: "#FAFAF9", position: "sticky", top: 0, zIndex: 100 }}>
-            <span onClick={() => setSection("home")} style={{ cursor: "pointer", color: "#7C3AED", fontSize: 20, fontWeight: 900 }}>‹</span>
+          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: "#FAFAF9", position: "sticky", top: 0, zIndex: 100 }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: "#374151" }}>{data.baby.name}</span>
           </div>
         )}
@@ -1524,13 +1523,22 @@ export default function App() {
         </div>
 
         {/* Bottom nav */}
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#fff", borderTop: "1.5px solid #F3F4F6", display: "flex", justifyContent: "space-around", padding: "8px 0 20px", zIndex: 200 }}>
-          {navItems.map(n => (
-            <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, cursor: "pointer", color: section === n.key ? "#7C3AED" : "#9CA3AF", transition: "color .2s", padding: "4px 8px" }}>
-              <span style={{ fontSize: 20, transition: "transform .15s", transform: section === n.key ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
-              <span style={{ fontSize: 10, fontWeight: 800 }}>{n.label}</span>
-            </div>
-          ))}
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#fff", borderTop: "1.5px solid #F3F4F6", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "8px 0 20px", zIndex: 200 }}>
+          {navItems.map(n => {
+            if (n.key === "home") return (
+              <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -15 }}>
+                <div style={{ width: 54, height: 54, borderRadius: "50%", background: "linear-gradient(135deg, #7C3AED, #6366F1)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(124,58,237,0.45)", transition: "transform .15s", transform: section === "home" ? "scale(1.08)" : "scale(1)" }}>
+                  <span style={{ fontSize: 24 }}>🏠</span>
+                </div>
+              </div>
+            );
+            return (
+              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, cursor: "pointer", color: section === n.key ? "#7C3AED" : "#9CA3AF", transition: "color .2s", padding: "4px 8px" }}>
+                <span style={{ fontSize: 20, transition: "transform .15s", transform: section === n.key ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
+                <span style={{ fontSize: 10, fontWeight: 800 }}>{n.label}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
