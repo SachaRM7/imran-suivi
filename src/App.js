@@ -326,6 +326,23 @@ const DashboardHome = ({ data, goTo }) => {
   const nextAppt = (data.appointments || []).filter(a => a.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const lastGrowth = (data.growth || []).sort((a, b) => b.date.localeCompare(a.date))[0];
 
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => setAlertDismissed(false), 120000);
+    return () => clearInterval(id);
+  }, []);
+  const now = Date.now();
+  const hrsAgo = (ts) => ts ? (now - new Date(ts)) / 3600000 : null;
+  const lastB = [...(data.bottles||[])].sort((a,b) => (b.time||"").localeCompare(a.time||""))[0];
+  const lastD = [...(data.diapers||[])].sort((a,b) => (b.time||"").localeCompare(a.time||""))[0];
+  const ongoingSleep = (data.sleep||[]).find(s => !s.end);
+  const hB = hrsAgo(lastB?.time), hD = hrsAgo(lastD?.time), hS = hrsAgo(ongoingSleep?.start);
+  const alertMsg = hB > 3 ? `🍼 Dernier biberon il y a ${Math.floor(hB)}h — pensez à noter ?`
+    : hD > 3 ? `🧷 Dernier change il y a ${Math.floor(hD)}h`
+    : hS > 3 ? `😴 Sieste en cours depuis ${Math.floor(hS)}h`
+    : "Tout est à jour ✓";
+  const alertWarn = hB > 3 || hD > 3 || hS > 3;
+
   const cards = [
     { key: "bottles", emoji: "🍼", label: "Biberons", value: `${todayB.length} — ${totalMl} ml`, color: "#818CF8" },
     { key: "diapers", emoji: "🧷", label: "Couches", value: `${todayD.length} changées`, color: "#F59E0B" },
@@ -355,6 +372,14 @@ const DashboardHome = ({ data, goTo }) => {
         <div style={{ fontSize: 30, fontWeight: 900, marginTop: 6 }}>{data.baby.name || "Bébé"} 👶</div>
         {age && <div style={{ fontSize: 15, marginTop: 4, opacity: 0.9, fontWeight: 600 }}>{age}</div>}
       </div>
+
+      {/* Alert banner */}
+      {!alertDismissed && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: alertWarn ? "#FFFBEB" : "#F0FDF4", border: `1.5px solid ${alertWarn ? "#FDE68A" : "#86EFAC"}`, borderRadius: 14, padding: "10px 14px", marginBottom: 14 }}>
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: alertWarn ? "#92400E" : "#166534" }}>{alertMsg}</span>
+          <button onClick={() => setAlertDismissed(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#9CA3AF", padding: "0 2px", lineHeight: 1 }}>✕</button>
+        </div>
+      )}
 
       {/* Quick stats */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, overflowX: "auto", paddingBottom: 2 }}>
@@ -430,9 +455,13 @@ const BottlesSection = ({ data, update }) => {
   const [amount, setAmount] = useState("");
   const [time, setTime] = useState(nowStr());
   const [note, setNote] = useState("");
+  const [sleepWarn, setSleepWarn] = useState(false);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
-  const quickAdd = (ml) => update(d => { d.bottles.push({ id: uid(), amount: ml, time: nowStr(), note: "" }); });
-  const add = () => { if (!(Number(amount) > 0)) return; update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note }); }); setModal(false); setAmount(""); setNote(""); };
+  const triggerSleepWarn = () => {
+    if ((data.sleep||[]).find(s => !s.end)) { setSleepWarn(true); setTimeout(() => setSleepWarn(false), 10000); }
+  };
+  const quickAdd = (ml) => { update(d => { d.bottles.push({ id: uid(), amount: ml, time: nowStr(), note: "" }); }); triggerSleepWarn(); };
+  const add = () => { if (!(Number(amount) > 0)) return; update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note }); }); setModal(false); setAmount(""); setNote(""); triggerSleepWarn(); };
   const remove = (id) => update(d => { d.bottles = d.bottles.filter(b => b.id !== id); });
   const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
   const olderB = (data.bottles||[]).filter(b => !b.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
@@ -458,6 +487,15 @@ const BottlesSection = ({ data, update }) => {
         </div>
       )}
 
+      {sleepWarn && (
+        <div style={{ background: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#92400E", marginBottom: 8 }}>⚠️ Un sommeil est en cours et n'a pas été terminé.</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn small onClick={() => { update(d => { const s = d.sleep.find(x => !x.end); if (s) s.end = nowStr(); }); setSleepWarn(false); }}>Terminer le sommeil</Btn>
+            <Btn small variant="secondary" onClick={() => setSleepWarn(false)}>Ignorer</Btn>
+          </div>
+        </div>
+      )}
       {dayB.length === 0 && <EmptyState emoji="🍼" text={`Aucun biberon — ${dateLabel}`} />}
       {dayB.map(b => (
         <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
@@ -503,7 +541,11 @@ const DiapersSection = ({ data, update }) => {
   const [quantity, setQuantity] = useState(null);
   const [consistency, setConsistency] = useState(null);
   const [color, setColor] = useState(null);
+  const [sleepWarn, setSleepWarn] = useState(false);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
+  const triggerSleepWarn = () => {
+    if ((data.sleep||[]).find(s => !s.end)) { setSleepWarn(true); setTimeout(() => setSleepWarn(false), 10000); }
+  };
 
   const TYPE_EMOJIS = { pipi: "💦", caca: "💩", mixte: "🧷" };
   const TYPE_LABELS = { pipi: "Pipi", caca: "Caca", mixte: "Mixte" };
@@ -517,6 +559,7 @@ const DiapersSection = ({ data, update }) => {
     if (col) entry.color = col;
     update(d => { d.diapers.push(entry); });
     resetFunnel();
+    triggerSleepWarn();
   };
 
   const handleTypeSelect = (t) => { setSelectedType(t); setQuantity(null); setConsistency(null); setColor(null); };
@@ -540,7 +583,7 @@ const DiapersSection = ({ data, update }) => {
     setColor(col);
   };
 
-  const add = () => { update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); }); setModal(false); setNote(""); };
+  const add = () => { update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); }); setModal(false); setNote(""); triggerSleepWarn(); };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
   const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
 
@@ -636,6 +679,15 @@ const DiapersSection = ({ data, update }) => {
         </>
       )}
 
+      {sleepWarn && (
+        <div style={{ background: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#92400E", marginBottom: 8 }}>⚠️ Un sommeil est en cours et n'a pas été terminé.</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn small onClick={() => { update(d => { const s = d.sleep.find(x => !x.end); if (s) s.end = nowStr(); }); setSleepWarn(false); }}>Terminer le sommeil</Btn>
+            <Btn small variant="secondary" onClick={() => setSleepWarn(false)}>Ignorer</Btn>
+          </div>
+        </div>
+      )}
       {todayD.length === 0 && <EmptyState emoji="🧷" text={`Aucune couche — ${dateLabel}`} />}
       {todayD.map(d => (
         <Card key={d.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
