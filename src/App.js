@@ -1352,6 +1352,124 @@ const NotesSection = ({ data, update }) => {
 const PdfSection = ({ data }) => {
   const today = todayStr();
   const todayFmt = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const [weekModal, setWeekModal] = useState(false);
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
+
+  // Compute 4 last weeks (Mon–Sun)
+  const weeks = (() => {
+    const pad = n => String(n).padStart(2, "0");
+    const dateStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const now = new Date();
+    const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    const monday = new Date(now); monday.setDate(now.getDate() - dow); monday.setHours(0,0,0,0);
+    return Array.from({ length: 4 }, (_, w) => {
+      const start = new Date(monday); start.setDate(monday.getDate() - w * 7);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      const label = `${start.getDate()} – ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
+      return { start: dateStr(start), end: dateStr(end), label };
+    });
+  })();
+
+  const exportWeeklyPDF = () => {
+    const week = weeks[selectedWeekIdx];
+    const pad = n => String(n).padStart(2, "0");
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(week.start + "T12:00:00"); d.setDate(d.getDate() + i);
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    });
+    const durMin = (s) => { if (!s.end) return 0; return Math.round((new Date(s.end) - new Date(s.start)) / 60000); };
+    const fmtMin = (m) => m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m}min`;
+
+    // Per-day stats
+    const summaryRows = days.map(d => {
+      const bs = (data.bottles||[]).filter(b => b.time?.startsWith(d));
+      const ds = (data.diapers||[]).filter(x => x.time?.startsWith(d));
+      const ss = (data.sleep||[]).filter(s => s.start?.startsWith(d));
+      const totalMl = bs.reduce((s, b) => s + (b.amount||0), 0);
+      const totalSleep = ss.filter(s => s.end).reduce((s, x) => s + durMin(x), 0);
+      const label = new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+      return { d, label, bottles: bs.length, ml: totalMl, diapers: ds.length, sleep: ss.length, sleepMin: totalSleep };
+    });
+
+    const weekBottles = (data.bottles||[]).filter(b => b.time >= week.start && b.time <= week.end + "T23:59");
+    const weekDiapers = (data.diapers||[]).filter(x => x.time >= week.start && x.time <= week.end + "T23:59");
+    const weekSleep   = (data.sleep||[]).filter(s => (s.start||"") >= week.start && (s.start||"") <= week.end + "T23:59");
+    const weekMeds    = (data.medicines||[]).filter(m => m.time >= week.start && m.time <= week.end + "T23:59");
+    const weekTemp    = (data.temperature||[]).filter(t => t.time >= week.start && t.time <= week.end + "T23:59");
+    const weekBaths   = (data.baths||[]).filter(b => b.time >= week.start && b.time <= week.end + "T23:59");
+    const weekNotes   = (data.notes||[]).filter(n => n.date >= week.start && n.date <= week.end);
+
+    const avgMl = Math.round(weekBottles.reduce((s,b)=>s+(b.amount||0),0) / 7);
+    const pipi = weekDiapers.filter(d=>d.type==="pipi").length;
+    const caca = weekDiapers.filter(d=>d.type==="caca").length;
+    const mixte = weekDiapers.filter(d=>d.type==="mixte").length;
+
+    const summaryTable = `
+<h3>📅 Résumé jour par jour</h3>
+<table>
+<tr><th>Jour</th><th>🍼 Biberons</th><th>ml</th><th>🧷 Couches</th><th>😴 Siestes</th><th>Sommeil total</th></tr>
+${summaryRows.map(r => `<tr><td>${r.label}</td><td>${r.bottles}</td><td>${r.ml ? r.ml+"ml" : "—"}</td><td>${r.diapers}</td><td>${r.sleep}</td><td>${r.sleepMin ? fmtMin(r.sleepMin) : "—"}</td></tr>`).join("")}
+</table>`;
+
+    let sections = summaryTable;
+
+    if (weekBottles.length > 0) {
+      sections += `<h3>🍼 Biberons — ${weekBottles.length} repas · ${weekBottles.reduce((s,b)=>s+(b.amount||0),0)}ml total · moy. ${avgMl}ml/jour</h3>
+<table><tr><th>Jour</th><th>Heure</th><th>Quantité</th><th>Note</th></tr>
+${weekBottles.sort((a,b)=>a.time.localeCompare(b.time)).map(b => `<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td><b>${b.amount}ml</b></td><td>${b.note||"—"}</td></tr>`).join("")}
+</table>`;
+    }
+    if (weekDiapers.length > 0) {
+      sections += `<h3>🧷 Couches — ${weekDiapers.length} · Pipi: ${pipi} / Caca: ${caca} / Mixte: ${mixte}</h3>
+<table><tr><th>Jour</th><th>Heure</th><th>Type</th></tr>
+${weekDiapers.sort((a,b)=>a.time.localeCompare(b.time)).map(d => { const details=[d.quantity,d.consistency,d.color].filter(Boolean).join(" · "); return `<tr><td>${new Date(d.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(d.time)}</td><td>${d.type}${details?` · ${details}`:""}</td></tr>`; }).join("")}
+</table>`;
+    }
+    if (weekSleep.length > 0) {
+      const totalMin = weekSleep.filter(s=>s.end).reduce((s,x)=>s+durMin(x),0);
+      sections += `<h3>😴 Sommeil — ${weekSleep.length} siestes · total ${fmtMin(totalMin)}</h3>
+<table><tr><th>Jour</th><th>Début</th><th>Fin</th><th>Durée</th></tr>
+${weekSleep.sort((a,b)=>a.start.localeCompare(b.start)).map(s => `<tr><td>${new Date(s.start).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(s.start)}</td><td>${s.end?fmtTime(s.end):"En cours"}</td><td>${s.end?fmtMin(durMin(s)):"—"}</td></tr>`).join("")}
+</table>`;
+    }
+    if (weekTemp.length > 0) {
+      sections += `<h3>🌡️ Températures</h3>
+<table><tr><th>Jour</th><th>Heure</th><th>Valeur</th><th>Note</th></tr>
+${weekTemp.sort((a,b)=>a.time.localeCompare(b.time)).map(t => `<tr><td>${new Date(t.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note||"—"}</td></tr>`).join("")}
+</table>`;
+    }
+    if (weekMeds.length > 0) {
+      sections += `<h3>💊 Médicaments</h3>
+<table><tr><th>Jour</th><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>
+${weekMeds.sort((a,b)=>a.time.localeCompare(b.time)).map(m => `<tr><td>${new Date(m.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose||"—"}</td><td>${m.note||"—"}</td></tr>`).join("")}
+</table>`;
+    }
+    if (weekBaths.length > 0) {
+      sections += `<h3>🛁 Bains</h3>
+<table><tr><th>Jour</th><th>Heure</th><th>Temp. eau</th><th>Note</th></tr>
+${weekBaths.sort((a,b)=>a.time.localeCompare(b.time)).map(b => `<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td>${b.temp}°C</td><td>${b.note||"—"}</td></tr>`).join("")}
+</table>`;
+    }
+    if (weekNotes.length > 0) {
+      sections += `<h3>📝 Journal</h3>
+${weekNotes.map(n => `<blockquote><b>${new Date(n.date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</b><br>${n.mood||""} ${n.text}</blockquote>`).join("")}`;
+    }
+
+    const titleWeek = `Semaine du ${week.label}`;
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>${titleWeek} — ${data.baby.name}</title>
+<style>body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:800px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.subtitle{color:#6B7280;margin-bottom:24px;font-size:13px}h3{color:#374151;margin:24px 0 8px;font-size:15px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}</style>
+</head><body>
+<h1>Rapport hebdomadaire — ${data.baby.name} 👶</h1>
+<p class="subtitle">${titleWeek}</p>
+${sections}
+<footer>Généré par Baby Tracker</footer>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
+    setWeekModal(false);
+  };
 
   const todayBottles = (data.bottles || []).filter(b => b.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
   const todayDiapers = (data.diapers || []).filter(d => d.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
@@ -1507,6 +1625,28 @@ ${sections}
       )}
 
       {hasData && <Btn onClick={exportPDF} full style={{ marginTop: 8 }}>🖨️ Imprimer / Exporter en PDF</Btn>}
+
+      <div style={{ marginTop: 20, borderTop: "1.5px solid #F3F4F6", paddingTop: 18 }}>
+        <Card onClick={() => setWeekModal(true)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 28 }}>📊</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Export hebdomadaire</div>
+            <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>Compte rendu détaillé d'une semaine</div>
+          </div>
+        </Card>
+      </div>
+
+      <Modal open={weekModal} onClose={() => setWeekModal(false)} title="Export hebdomadaire">
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 10 }}>Sélectionner la semaine</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+          {weeks.map((w, i) => (
+            <button key={i} onClick={() => setSelectedWeekIdx(i)} style={{ padding: "10px 14px", borderRadius: 12, border: `2px solid ${selectedWeekIdx === i ? "#7C3AED" : "#E5E7EB"}`, background: selectedWeekIdx === i ? "#EDE9FE" : "#fff", textAlign: "left", cursor: "pointer", fontWeight: 700, fontSize: 13, color: selectedWeekIdx === i ? "#7C3AED" : "#374151" }}>
+              {i === 0 ? "Cette semaine" : i === 1 ? "Semaine dernière" : `Il y a ${i} semaines`} — {w.label}
+            </button>
+          ))}
+        </div>
+        <Btn onClick={exportWeeklyPDF} full>📊 Générer le rapport</Btn>
+      </Modal>
     </div>
   );
 };
