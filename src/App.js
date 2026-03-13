@@ -770,53 +770,121 @@ const SleepSection = ({ data, update }) => {
   );
 };
 
+// ─── Mr Cuisine recipes ───
+const MR_CUISINE_RECIPES = [
+  { name: "Purée carotte-patate douce", emoji: "🥕", ingredients: ["Carotte", "Patate douce"], ageMin: 4, steps: "Éplucher et couper en dés. Mettre dans le bol avec 200ml d'eau. Programme Vapeur 15min. Mixer vitesse 7 pendant 30s. Ajouter un filet d'huile d'olive." },
+  { name: "Compote pomme-poire", emoji: "🍎", ingredients: ["Pomme", "Poire"], ageMin: 4, steps: "Éplucher, épépiner et couper. Programme Vapeur 12min. Mixer vitesse 5 pendant 20s. Servir tiède ou froid." },
+  { name: "Purée brocoli-pomme de terre", emoji: "🥦", ingredients: ["Brocoli", "Pomme de terre"], ageMin: 5, steps: "Couper le brocoli en fleurettes, éplucher la pomme de terre. 200ml d'eau. Programme Vapeur 15min. Mixer vitesse 8 pendant 40s." },
+  { name: "Velouté courgette-semoule", emoji: "🫑", ingredients: ["Courgette", "Semoule"], ageMin: 5, steps: "Couper la courgette. Programme Vapeur 10min. Ajouter 2 cuillères de semoule cuite. Mixer vitesse 6 pendant 20s." },
+  { name: "Purée épinard-riz", emoji: "🥬", ingredients: ["Épinard", "Riz"], ageMin: 6, steps: "Blanchir les épinards. Cuire le riz séparément. Mixer les épinards vitesse 8 pendant 45s. Incorporer le riz et mixer à nouveau vitesse 5." },
+  { name: "Poulet carotte riz", emoji: "🍗", ingredients: ["Poulet", "Carotte", "Riz"], ageMin: 7, steps: "Couper le poulet et la carotte. Programme Vapeur 20min. Cuire le riz séparément. Tout mixer vitesse 6 pendant 30s." },
+  { name: "Saumon patate douce", emoji: "🐟", ingredients: ["Saumon", "Patate douce"], ageMin: 7, steps: "Couper le saumon sans arêtes. Éplucher la patate douce. Programme Vapeur 15min. Mixer vitesse 7 pendant 25s. Vérifier l'absence d'arêtes." },
+  { name: "Banane flocons d'avoine", emoji: "🍌", ingredients: ["Banane", "Flocons d'avoine"], ageMin: 5, steps: "Écraser la banane à la fourchette. Cuire les flocons d'avoine avec du lait (ratio 3:1) 3min au micro-ondes. Mélanger les deux." },
+  { name: "Potiron lentilles corail", emoji: "🎃", ingredients: ["Potiron", "Lentilles rouges"], ageMin: 6, steps: "Couper le potiron. Rincer les lentilles. 300ml d'eau. Programme Vapeur 20min. Mixer vitesse 8 pendant 40s. Assaisonner légèrement." },
+  { name: "Poireaux pomme de terre", emoji: "🧅", ingredients: ["Poireau", "Pomme de terre"], ageMin: 5, steps: "Couper le poireau (partie verte et blanche). Éplucher la pomme de terre. 200ml d'eau. Programme Vapeur 18min. Mixer vitesse 7 pendant 35s." },
+  { name: "Compote pêche abricot", emoji: "🍑", ingredients: ["Pêche", "Abricot"], ageMin: 4, steps: "Éplucher et dénoyauter. Programme Vapeur 10min. Mixer vitesse 5 pendant 15s. Parfait servi frais." },
+  { name: "Haricots verts carotte", emoji: "🫘", ingredients: ["Haricots verts", "Carotte"], ageMin: 5, steps: "Équeter les haricots, couper la carotte. 250ml d'eau. Programme Vapeur 18min. Mixer vitesse 8 pendant 45s pour texture lisse." },
+  { name: "Bœuf carotte patate douce", emoji: "🥩", ingredients: ["Bœuf", "Carotte", "Patate douce"], ageMin: 8, steps: "Couper le bœuf en petits morceaux. Éplucher et couper les légumes. 300ml d'eau. Programme Vapeur 25min. Mixer vitesse 7 pendant 40s." },
+  { name: "Mangue banane", emoji: "🥭", ingredients: ["Mangue", "Banane"], ageMin: 5, steps: "Éplucher et couper. Pas besoin de cuisson ! Mixer à froid vitesse 7 pendant 20s. Servir immédiatement." },
+  { name: "Pois chiches courgette", emoji: "🫛", ingredients: ["Pois chiches", "Courgette"], ageMin: 7, steps: "Utiliser des pois chiches en boîte (rincés). Couper la courgette. Programme Vapeur 10min. Mixer vitesse 8 pendant 50s pour texture homogène." },
+  { name: "Butternut pomme cannelle", emoji: "🍂", ingredients: ["Butternut", "Pomme"], ageMin: 5, steps: "Éplucher et couper. 200ml d'eau. Programme Vapeur 15min. Une pincée de cannelle (dès 6 mois). Mixer vitesse 7 pendant 30s." },
+];
+
 // ─── SECTION: Food ───
 const FoodSection = ({ data, update }) => {
+  const [view, setView] = useState("aliments");
   const [cat, setCat] = useState("Légumes");
   const [customModal, setCustomModal] = useState(false);
   const [customName, setCustomName] = useState("");
   const [customCat, setCustomCat] = useState("Légumes");
+  const [recipeModal, setRecipeModal] = useState(null);
+  const [onlyCompatible, setOnlyCompatible] = useState(false);
+
   const toggle = (name) => update(d => { d.foods[name] ? delete d.foods[name] : d.foods[name] = { date: todayStr(), reaction: "ok" }; });
   const setReaction = (name, r) => update(d => { if (d.foods[name]) d.foods[name].reaction = r; });
   const tried = Object.keys(data.foods||{}).filter(k => data.foods[k]).length;
   const total = Object.values(FOOD_CATEGORIES).flat().length;
 
+  const validated = new Set(Object.keys(data.foods||{}).filter(k => data.foods[k]));
+  const recipes = onlyCompatible
+    ? MR_CUISINE_RECIPES.filter(r => r.ingredients.every(i => validated.has(i)))
+    : MR_CUISINE_RECIPES;
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>🥕 Diversification</div>
-        <Btn onClick={() => setCustomModal(true)} small>+ Perso</Btn>
-      </div>
-      <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 14 }}>{tried}/{total} aliments goûtés</div>
-
-      <div style={{ background: "#F3F4F6", borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${(tried / total) * 100}%`, background: "linear-gradient(90deg, #22C55E, #10B981)", borderRadius: 10, transition: "width .4s" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Mr Cuisine"}</div>
+        {view === "aliments" && <Btn onClick={() => setCustomModal(true)} small>+ Perso</Btn>}
       </div>
 
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
-        {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={cat === c} onClick={() => setCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
+      {/* Toggle vue */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#F3F4F6", borderRadius: 12, padding: 4 }}>
+        {[["aliments", "🥕 Aliments"], ["cuisine", "🍳 Mr Cuisine"]].map(([v, label]) => (
+          <button key={v} onClick={() => setView(v)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: view === v ? "#fff" : "transparent", color: view === v ? "#7C3AED" : "#9CA3AF", boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
+        ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {FOOD_CATEGORIES[cat].map(food => {
-          const t = !!data.foods?.[food];
-          const r = data.foods?.[food]?.reaction;
-          const bg = t ? (r === "allergie" ? "#FEF2F2" : r === "refusé" ? "#FFFBEB" : "#F0FDF4") : "#fff";
-          const bd = t ? (r === "allergie" ? "#FECACA" : r === "refusé" ? "#FDE68A" : "#86EFAC") : "#F3F4F6";
-          return (
-            <div key={food} onClick={() => toggle(food)} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", background: bg, border: `2px solid ${bd}`, transition: "all .2s" }}>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>{t ? "✓ " : ""}{food}</div>
-              {t && (
-                <div style={{ display: "flex", gap: 3, marginTop: 6 }} onClick={e => e.stopPropagation()}>
-                  {[["ok","👍"],["refusé","🚫"],["allergie","⚠️"]].map(([rv, em]) => (
-                    <span key={rv} onClick={() => setReaction(food, rv)} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 8, fontWeight: 700, cursor: "pointer", background: r === rv ? (rv === "allergie" ? "#EF4444" : rv === "refusé" ? "#F59E0B" : "#10B981") : "#F3F4F6", color: r === rv ? "#fff" : "#6B7280" }}>{em}</span>
-                  ))}
+      {view === "aliments" && (
+        <>
+          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 14 }}>{tried}/{total} aliments goûtés</div>
+          <div style={{ background: "#F3F4F6", borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${(tried / total) * 100}%`, background: "linear-gradient(90deg, #22C55E, #10B981)", borderRadius: 10, transition: "width .4s" }} />
+          </div>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
+            {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={cat === c} onClick={() => setCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {FOOD_CATEGORIES[cat].map(food => {
+              const t = !!data.foods?.[food];
+              const r = data.foods?.[food]?.reaction;
+              const bg = t ? (r === "allergie" ? "#FEF2F2" : r === "refusé" ? "#FFFBEB" : "#F0FDF4") : "#fff";
+              const bd = t ? (r === "allergie" ? "#FECACA" : r === "refusé" ? "#FDE68A" : "#86EFAC") : "#F3F4F6";
+              return (
+                <div key={food} onClick={() => toggle(food)} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", background: bg, border: `2px solid ${bd}`, transition: "all .2s" }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t ? "✓ " : ""}{food}</div>
+                  {t && (
+                    <div style={{ display: "flex", gap: 3, marginTop: 6 }} onClick={e => e.stopPropagation()}>
+                      {[["ok","👍"],["refusé","🚫"],["allergie","⚠️"]].map(([rv, em]) => (
+                        <span key={rv} onClick={() => setReaction(food, rv)} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 8, fontWeight: 700, cursor: "pointer", background: r === rv ? (rv === "allergie" ? "#EF4444" : rv === "refusé" ? "#F59E0B" : "#10B981") : "#F3F4F6", color: r === rv ? "#fff" : "#6B7280" }}>{em}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {view === "cuisine" && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{validated.size} aliment{validated.size !== 1 ? "s" : ""} validé{validated.size !== 1 ? "s" : ""}</div>
+            <button onClick={() => setOnlyCompatible(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, background: onlyCompatible ? "#EDE9FE" : "#F3F4F6", border: `1.5px solid ${onlyCompatible ? "#7C3AED" : "#E5E7EB"}`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: onlyCompatible ? "#7C3AED" : "#6B7280", cursor: "pointer" }}>
+              ✓ Compatibles
+            </button>
+          </div>
+          {recipes.length === 0 && <EmptyState emoji="🍳" text="Aucune recette compatible pour l'instant" />}
+          {recipes.map((recipe, i) => {
+            const missing = recipe.ingredients.filter(ing => !validated.has(ing));
+            const compatible = missing.length === 0;
+            return (
+              <Card key={i} onClick={() => setRecipeModal(recipe)} style={{ marginBottom: 10, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{recipe.name}</div>
+                    <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 6 }}>≥ {recipe.ageMin} mois · {recipe.ingredients.join(", ")}</div>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
+                      {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.join(", ")}`}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </>
+      )}
 
       <Modal open={customModal} onClose={() => setCustomModal(false)} title="Ajouter un aliment perso">
         <Input label="Nom" value={customName} onChange={e => setCustomName(e.target.value)} placeholder="Ex: Patisson" />
@@ -824,6 +892,22 @@ const FoodSection = ({ data, update }) => {
           {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={customCat === c} onClick={() => setCustomCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
         </div>
         <Btn onClick={() => { if (customName.trim()) { update(d => { d.foods[customName.trim()] = { date: todayStr(), reaction: "ok", custom: true }; }); setCustomModal(false); setCustomName(""); } }} full>Ajouter</Btn>
+      </Modal>
+
+      <Modal open={!!recipeModal} onClose={() => setRecipeModal(null)} title={recipeModal ? `${recipeModal.emoji} ${recipeModal.name}` : ""}>
+        {recipeModal && (
+          <>
+            <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>INGRÉDIENTS</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+              {recipeModal.ingredients.map(ing => (
+                <span key={ing} style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: validated.has(ing) ? "#F0FDF4" : "#FEF2F2", color: validated.has(ing) ? "#166534" : "#991B1B", border: `1px solid ${validated.has(ing) ? "#86EFAC" : "#FECACA"}` }}>{validated.has(ing) ? "✓ " : "✗ "}{ing}</span>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>ÉTAPES MR CUISINE</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: "#374151", background: "#F9FAFB", borderRadius: 12, padding: 14 }}>{recipeModal.steps}</div>
+            <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, textAlign: "center" }}>Dès {recipeModal.ageMin} mois</div>
+          </>
+        )}
       </Modal>
     </div>
   );
