@@ -199,6 +199,7 @@ const defaultState = () => ({
   exercises: {},
   customExercises: {},
   books: [],
+  testedRecipes: {},
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -352,13 +353,26 @@ const EmptyState = ({ emoji, text }) => {
 };
 
 // ─── Profile system ───
-const PROFILE_EMOJIS = ["👶", "🍼", "🌟", "🐻", "🦁", "🐼", "🦊", "🐨", "🌸", "🌈", "⭐", "🎀", "🧸", "🦋"];
+const PROFILE_AVATARS = {
+  boy:  ["👶","👶🏻","👶🏼","👶🏽","👶🏾","👶🏿","👦","👦🏻","👦🏼","👦🏽","👦🏾","👦🏿"],
+  girl: ["👶","👶🏻","👶🏼","👶🏽","👶🏾","👶🏿","👧","👧🏻","👧🏼","👧🏽","👧🏾","👧🏿"],
+};
 const PROFILE_COLORS = ["#C4B5FD", "#A78BFA", "#F9A8D4", "#FCA5A5", "#86EFAC", "#93C5FD", "#FCD34D", "#6EE7B7"];
 
 const AddProfileModal = ({ onSave, onClose }) => {
   const [name, setName] = useState("");
+  const [gender, setGender] = useState("boy");
   const [emoji, setEmoji] = useState("👶");
   const [color, setColor] = useState("#C4B5FD");
+
+  const handleGender = (g) => {
+    setGender(g);
+    const list = PROFILE_AVATARS[g];
+    if (!list.includes(emoji)) setEmoji(list[0]);
+  };
+
+  const avatars = PROFILE_AVATARS[gender];
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#1A1A24", borderRadius: 24, padding: "28px 24px", width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}>
@@ -368,10 +382,18 @@ const AddProfileModal = ({ onSave, onClose }) => {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex : Imran" style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #2D2D3A", background: "#0F0F14", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }} />
         </div>
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Emoji</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {PROFILE_EMOJIS.map(em => (
-              <span key={em} onClick={() => setEmoji(em)} style={{ width: 40, height: 40, borderRadius: 10, background: emoji === em ? "#2D2D4A" : "transparent", border: `2px solid ${emoji === em ? "#A78BFA" : "transparent"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer" }}>{em}</span>
+          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Genre</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[["boy","👦 Garçon"],["girl","👧 Fille"]].map(([g, label]) => (
+              <button key={g} onClick={() => handleGender(g)} style={{ flex: 1, padding: "9px 0", borderRadius: 11, border: `2px solid ${gender === g ? "#A78BFA" : "#2D2D3A"}`, background: gender === g ? "#2D2D4A" : "transparent", color: gender === g ? "#C4B5FD" : "rgba(255,255,255,0.45)", fontWeight: 700, fontSize: 13, cursor: "pointer", transition: "all .15s" }}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Avatar</label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
+            {avatars.map(em => (
+              <span key={em} onClick={() => setEmoji(em)} style={{ height: 40, borderRadius: 10, background: emoji === em ? "#2D2D4A" : "transparent", border: `2px solid ${emoji === em ? "#A78BFA" : "transparent"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer" }}>{em}</span>
             ))}
           </div>
         </div>
@@ -395,7 +417,7 @@ const AddProfileModal = ({ onSave, onClose }) => {
 const ProfileSelector = ({ profiles, onSelect, onAdd }) => {
   const { darkMode, toggleDark } = useTheme();
   const [showAdd, setShowAdd] = useState(false);
-  const lastId = (() => { try { return localStorage.getItem("lastProfileId"); } catch { return null; } })();
+  const lastId = (() => { try { return localStorage.getItem("baby-tracker-last-profile"); } catch { return null; } })();
   const profileList = Object.entries(profiles || {});
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #0D0D18 0%, #1A0533 55%, #0D0D18 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
@@ -493,7 +515,7 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
     { key: "baths", emoji: "🛁", label: "Bains", value: `${todayItems(data.baths).length} aujourd'hui`, color: "#06B6D4" },
     { key: "exercises", emoji: "🧘", label: "Éveil", value: (() => { const t = todayStr(); const checks = data.exercises?.[t] || {}; return `${Object.keys(checks).length} faits`; })(), color: "#A78BFA" },
     { key: "books", emoji: "📖", label: "Bibliothèque", value: `${(data.books||[]).length} livre${(data.books||[]).length !== 1 ? "s" : ""}`, color: "#F59E0B" },
-    { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
+    { key: "routines", emoji: "🔄", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
     { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
@@ -603,7 +625,6 @@ const BOTTLE_CONTENTS = [
   { key: "lait",     label: "Lait",     emoji: "🥛" },
   { key: "eau",      label: "Eau",      emoji: "💧" },
   { key: "cereales", label: "Céréales", emoji: "🥣" },
-  { key: "lait+eau", label: "Lait+Eau", emoji: "🥛💧" },
 ];
 
 const BottlesSection = ({ data, update }) => {
@@ -667,10 +688,12 @@ const BottlesSection = ({ data, update }) => {
   const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
   const totalMl = dayB.reduce((s, b) => s + (b.amount || 0), 0);
 
+  const LEGACY_CONTENT_LABELS = { "lait+eau": "🥛💧 Lait+Eau" };
   const contentTag = (b) => {
     if (!b.content) return "";
     const c = BOTTLE_CONTENTS.find(x => x.key === b.content);
-    return c ? ` · ${c.emoji} ${c.label}` : "";
+    if (c) return ` · ${c.emoji} ${c.label}`;
+    return LEGACY_CONTENT_LABELS[b.content] ? ` · ${LEGACY_CONTENT_LABELS[b.content]}` : "";
   };
 
   return (
@@ -854,7 +877,7 @@ const DiapersSection = ({ data, update }) => {
     const parts = [TYPE_LABELS[d.type] || d.type];
     if (d.quantity) parts.push(d.quantity);
     if (d.consistency) parts.push(d.consistency);
-    if (d.color) parts.push(d.color);
+    if (d.color) parts.push(d.color === "Normal" ? "Marron" : d.color);
     return parts.join(" · ");
   };
 
@@ -926,7 +949,7 @@ const DiapersSection = ({ data, update }) => {
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Couleur</div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {["Normal", "Vert", "Jaune", "Noir"].map(c => (
+                    {["Marron", "Vert", "Jaune", "Noir"].map(c => (
                       <button key={c} onClick={() => handleColor(c)} style={{
                         flex: 1, padding: "10px 0", borderRadius: 10,
                         border: `2px solid ${color === c ? "#6B7280" : "#E5E7EB"}`,
@@ -1104,8 +1127,8 @@ const SleepSection = ({ data, update }) => {
   );
 };
 
-// ─── Mr Cuisine recipes ───
-const MR_CUISINE_RECIPES = [
+// ─── Baby recipes ───
+const BABY_RECIPES = [
   {
     name: "Purée carotte-patate douce", emoji: "🥕", ageMin: 4, basePortions: 2,
     ingredients: [
@@ -1262,7 +1285,8 @@ const FoodSection = ({ data, update }) => {
   const [customName, setCustomName] = useState("");
   const [recipeModal, setRecipeModal] = useState(null);
   const [portions, setPortions] = useState(1);
-  const [onlyCompatible, setOnlyCompatible] = useState(false);
+  const [recipeFilters, setRecipeFilters] = useState(new Set());
+  const [recipeNote, setRecipeNote] = useState("");
 
   const toggle = (name) => update(d => { d.foods[name] ? delete d.foods[name] : d.foods[name] = { date: todayStr(), reaction: "ok" }; });
   const setReaction = (name, r) => update(d => { if (d.foods[name]) d.foods[name].reaction = r; });
@@ -1282,14 +1306,40 @@ const FoodSection = ({ data, update }) => {
     setAddFoodCat(null);
   };
 
+  const toggleRecipeFilter = (f) => {
+    setRecipeFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(f)) next.delete(f); else next.add(f);
+      return next;
+    });
+  };
+
+  const saveRating = (recipeName, rating, note) => {
+    update(d => {
+      if (!d.testedRecipes) d.testedRecipes = {};
+      d.testedRecipes[recipeName] = { date: todayStr(), rating, note };
+    });
+  };
+
   const tried = Object.keys(data.foods||{}).filter(k => data.foods[k]).length;
   const customTotal = Object.values(data.customFoods||{}).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
   const total = Object.values(FOOD_CATEGORIES).flat().length + customTotal;
 
   const validated = new Set(Object.keys(data.foods||{}).filter(k => data.foods[k]));
-  const recipes = onlyCompatible
-    ? MR_CUISINE_RECIPES.filter(r => r.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait").every(i => validated.has(i.name)))
-    : MR_CUISINE_RECIPES;
+  const testedRecipes = data.testedRecipes || {};
+  const testedCount = BABY_RECIPES.filter(r => testedRecipes[r.name]).length;
+
+  const RATING_EMOJIS = { loved: "❤️", ok: "👍", refused: "🚫" };
+  const RATING_LABELS = { loved: "Adoré", ok: "Ok", refused: "Refusé" };
+  const RATING_COLORS = { loved: { bg: "#FEF2F2", border: "#FECACA", text: "#991B1B" }, ok: { bg: "#F0FDF4", border: "#86EFAC", text: "#166534" }, refused: { bg: "#FFF7ED", border: "#FED7AA", text: "#9A3412" } };
+
+  const filteredRecipes = BABY_RECIPES.filter(recipe => {
+    const realIngs = recipe.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait");
+    if (recipeFilters.has("compatible") && !realIngs.every(i => validated.has(i.name))) return false;
+    if (recipeFilters.has("loved") && testedRecipes[recipe.name]?.rating !== "loved") return false;
+    if (recipeFilters.has("untested") && testedRecipes[recipe.name]) return false;
+    return true;
+  });
 
   const renderFoodItem = (food, isCustom = false) => {
     const t = !!data.foods?.[food];
@@ -1318,11 +1368,11 @@ const FoodSection = ({ data, update }) => {
 
   return (
     <div>
-      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 14, color: theme.text }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Mr Cuisine"}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 14, color: theme.text }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Recettes"}</div>
 
       {/* Toggle vue */}
       <div style={{ display: "flex", gap: 8, marginBottom: 18, background: theme.subtle, borderRadius: 12, padding: 4 }}>
-        {[["aliments", "🥕 Aliments"], ["cuisine", "🍳 Mr Cuisine"]].map(([v, label]) => (
+        {[["aliments", "🥕 Aliments"], ["cuisine", "🍳 Recettes"]].map(([v, label]) => (
           <button key={v} onClick={() => setView(v)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: view === v ? theme.card : "transparent", color: view === v ? "#7C3AED" : theme.textMuted, boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
         ))}
       </div>
@@ -1351,27 +1401,41 @@ const FoodSection = ({ data, update }) => {
 
       {view === "cuisine" && (
         <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{validated.size} aliment{validated.size !== 1 ? "s" : ""} validé{validated.size !== 1 ? "s" : ""}</div>
-            <button onClick={() => setOnlyCompatible(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, background: onlyCompatible ? "#EDE9FE" : theme.subtle, border: `1.5px solid ${onlyCompatible ? "#7C3AED" : theme.border}`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: onlyCompatible ? "#7C3AED" : theme.textMuted, cursor: "pointer" }}>
-              ✓ Compatibles
-            </button>
+          {/* Compteur + filtres */}
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 10 }}>
+            {testedCount}/{BABY_RECIPES.length} recettes testées
           </div>
-          {recipes.length === 0 && <EmptyState emoji="🍳" text="Aucune recette compatible pour l'instant" />}
-          {recipes.map((recipe, i) => {
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+            {[
+              ["compatible", "✅ Compatibles"],
+              ["loved",      "❤️ Adorées"],
+              ["untested",   "🆕 Pas testées"],
+            ].map(([f, label]) => (
+              <Chip key={f} active={recipeFilters.has(f)} onClick={() => toggleRecipeFilter(f)} color="#7C3AED">{label}</Chip>
+            ))}
+          </div>
+          {filteredRecipes.length === 0 && <EmptyState emoji="🍳" text="Aucune recette pour ces filtres" />}
+          {filteredRecipes.map((recipe, i) => {
             const realIngs = recipe.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait");
             const missing = realIngs.filter(ing => !validated.has(ing.name));
             const compatible = missing.length === 0;
+            const tested = testedRecipes[recipe.name];
             return (
-              <Card key={i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); }} style={{ marginBottom: 10, cursor: "pointer" }}>
+              <Card key={i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); setRecipeNote(tested?.note || ""); }} style={{ marginBottom: 10, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, color: theme.text }}>{recipe.name}</div>
                     <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>≥ {recipe.ageMin} mois · {realIngs.map(i => i.name).join(", ")}</div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
-                      {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.map(i => i.name).join(", ")}`}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
+                        {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.map(i => i.name).join(", ")}`}
+                      </span>
+                      {tested
+                        ? <span style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted }}>{RATING_EMOJIS[tested.rating]} {fmt(tested.date)}</span>
+                        : <span style={{ fontSize: 10, color: theme.textMuted }}>Pas encore testée</span>
+                      }
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -1416,9 +1480,34 @@ const FoodSection = ({ data, update }) => {
                   );
                 })}
               </div>
-              <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>ÉTAPES MR CUISINE</div>
+              <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>PRÉPARATION</div>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "#374151", background: "#F9FAFB", borderRadius: 12, padding: 14 }}>{recipeModal.steps}</div>
               <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, textAlign: "center" }}>Dès {recipeModal.ageMin} mois</div>
+
+              {/* Mon retour */}
+              <div style={{ marginTop: 20, borderTop: `1px solid ${theme.border}`, paddingTop: 16 }}>
+                <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 10 }}>MON RETOUR</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  {(["loved","ok","refused"]).map(r => {
+                    const active = testedRecipes[recipeModal.name]?.rating === r;
+                    const c = RATING_COLORS[r];
+                    return (
+                      <button key={r} onClick={() => saveRating(recipeModal.name, r, recipeNote)}
+                        style={{ flex: 1, padding: "10px 4px", borderRadius: 12, border: `2px solid ${active ? c.border : theme.border}`, background: active ? c.bg : theme.card, cursor: "pointer", fontWeight: 700, fontSize: 11, color: active ? c.text : theme.textMuted, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, transition: "all .15s" }}>
+                        <span style={{ fontSize: 22 }}>{RATING_EMOJIS[r]}</span>
+                        {RATING_LABELS[r]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  value={recipeNote}
+                  onChange={e => setRecipeNote(e.target.value)}
+                  onBlur={() => { if (testedRecipes[recipeModal.name]) saveRating(recipeModal.name, testedRecipes[recipeModal.name].rating, recipeNote); }}
+                  placeholder="Notes (texture, quantité mangée...)"
+                  style={{ width: "100%", border: `1.5px solid ${theme.inputBorder}`, borderRadius: 10, padding: "8px 12px", fontSize: 13, background: theme.input, color: theme.text, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
             </>
           );
         })()}
@@ -2224,8 +2313,13 @@ const BooksSection = ({ data, update }) => {
   const [photo, setPhoto] = useState(null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState("recent");
 
-  const books = [...(data.books || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const books = [...(data.books || [])].sort((a, b) => {
+    if (sortMode === "interestDesc") return (b.interest - a.interest) || (b.date || "").localeCompare(a.date || "");
+    if (sortMode === "interestAsc")  return (a.interest - b.interest) || (b.date || "").localeCompare(a.date || "");
+    return (b.date || "").localeCompare(a.date || "");
+  });
   const filtered = search.trim() ? books.filter(b => b.title.toLowerCase().includes(search.trim().toLowerCase())) : books;
 
   const resetForm = () => { setTitle(""); setInterest(3); setDate(todayStr()); setNote(""); setPhoto(null); setEditId(null); };
@@ -2265,6 +2359,15 @@ const BooksSection = ({ data, update }) => {
         </div>
         <Btn onClick={openAdd} small>+ Ajouter</Btn>
       </div>
+
+      {/* Tri */}
+      {total > 0 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          {[["recent","📅 Récent"],["interestDesc","⭐ Intérêt ↓"],["interestAsc","⭐ Intérêt ↑"]].map(([mode, label]) => (
+            <Chip key={mode} active={sortMode === mode} onClick={() => setSortMode(mode)} color="#F59E0B">{label}</Chip>
+          ))}
+        </div>
+      )}
 
       {/* Stats */}
       {total > 0 && (
@@ -2471,7 +2574,7 @@ const sanitize = (val) => {
   ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines","books"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
-  ["foods","teeth","vaccines","milestonesChecked","customFoods","exercises","customExercises"].forEach(k => {
+  ["foods","teeth","vaccines","milestonesChecked","customFoods","exercises","customExercises","testedRecipes"].forEach(k => {
     if (!merged[k] || typeof merged[k] !== "object" || Array.isArray(merged[k])) merged[k] = {};
   });
   // Garantit que chaque catégorie customFoods est un tableau
@@ -2488,10 +2591,13 @@ const sanitize = (val) => {
 
 // ─── SECTION: Routines ───
 const RoutinesSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [selected, setSelected] = useState(null);
-  const [createModal, setCreateModal] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState(null); // null = création, string = édition
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🌅");
+  // items: {id: string|null, label: string}[] — id null = nouvelle action
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -2510,13 +2616,60 @@ const RoutinesSection = ({ data, update }) => {
 
   const openDetail = (id) => { resetIfNeeded(id); setSelected(id); };
 
-  const createRoutine = () => {
+  const openCreate = () => {
+    setEditId(null);
+    setName(""); setEmoji("🌅"); setItems([]); setNewItem("");
+    setModalOpen(true);
+  };
+
+  const openEdit = (r) => {
+    setEditId(r.id);
+    setName(r.name);
+    setEmoji(r.emoji);
+    setItems((r.items||[]).map(i => ({ id: i.id, label: i.label })));
+    setNewItem("");
+    setModalOpen(true);
+  };
+
+  const saveRoutine = () => {
     if (!name.trim()) return;
-    update(d => {
-      if (!d.routines) d.routines = [];
-      d.routines.push({ id: uid(), name: name.trim(), emoji, items: items.map(label => ({ id: uid(), label, checked: false, note: "" })), createdAt: nowStr(), lastResetDate: todayStr(), lastUsed: null });
-    });
-    setCreateModal(false); setName(""); setEmoji("🌅"); setItems([]);
+    if (editId) {
+      update(d => {
+        const r = (d.routines||[]).find(x => x.id === editId);
+        if (!r) return;
+        r.name = name.trim();
+        r.emoji = emoji;
+        // Preserve existing items (by id) to keep checked/note state
+        r.items = items.map(item => {
+          if (item.id) {
+            const existing = r.items.find(x => x.id === item.id);
+            return existing ? { ...existing, label: item.label } : { id: uid(), label: item.label, checked: false, note: "" };
+          }
+          return { id: uid(), label: item.label, checked: false, note: "" };
+        });
+      });
+    } else {
+      update(d => {
+        if (!d.routines) d.routines = [];
+        d.routines.push({ id: uid(), name: name.trim(), emoji, items: items.map(item => ({ id: uid(), label: item.label, checked: false, note: "" })), createdAt: nowStr(), lastResetDate: todayStr(), lastUsed: null });
+      });
+    }
+    setModalOpen(false); setEditId(null);
+    setName(""); setEmoji("🌅"); setItems([]);
+  };
+
+  const addItem = () => {
+    if (!newItem.trim()) return;
+    setItems([...items, { id: null, label: newItem.trim() }]);
+    setNewItem("");
+  };
+
+  const moveItem = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= items.length) return;
+    const next = [...items];
+    [next[i], next[j]] = [next[j], next[i]];
+    setItems(next);
   };
 
   const toggleCheck = (routineId, itemId) => {
@@ -2555,29 +2708,29 @@ const RoutinesSection = ({ data, update }) => {
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>{selectedRoutine.emoji} {selectedRoutine.name}</div>
-            <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{done}/{total} complété{done > 1 ? "s" : ""}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>{selectedRoutine.emoji} {selectedRoutine.name}</div>
+            <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{done}/{total} complété{done > 1 ? "s" : ""}</div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn small variant="secondary" onClick={() => resetAll(selected)}>↺ Réinit.</Btn>
             <Btn small variant="secondary" onClick={() => setSelected(null)}>← Retour</Btn>
           </div>
         </div>
-        <div style={{ background: "#F3F4F6", borderRadius: 10, height: 6, marginBottom: 18, overflow: "hidden" }}>
+        <div style={{ background: theme.subtle, borderRadius: 10, height: 6, marginBottom: 18, overflow: "hidden" }}>
           <div style={{ height: "100%", width: total ? `${(done/total)*100}%` : "0%", background: "linear-gradient(90deg, #7C3AED, #6366F1)", borderRadius: 10, transition: "width .4s" }} />
         </div>
         {selectedRoutine.items.map(item => (
           <Card key={item.id} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div onClick={() => toggleCheck(selected, item.id)} style={{ width: 24, height: 24, borderRadius: 8, border: `2px solid ${item.checked ? "#7C3AED" : "#D1D5DB"}`, background: item.checked ? "#7C3AED" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all .15s" }}>
+              <div onClick={() => toggleCheck(selected, item.id)} style={{ width: 24, height: 24, borderRadius: 8, border: `2px solid ${item.checked ? "#7C3AED" : theme.border}`, background: item.checked ? "#7C3AED" : theme.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all .15s" }}>
                 {item.checked && <span style={{ color: "#fff", fontSize: 13, lineHeight: 1 }}>✓</span>}
               </div>
-              <span style={{ fontWeight: 700, fontSize: 14, flex: 1, textDecoration: item.checked ? "line-through" : "none", color: item.checked ? "#9CA3AF" : "#1F2937" }}>{item.label}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, flex: 1, textDecoration: item.checked ? "line-through" : "none", color: item.checked ? theme.textMuted : theme.text }}>{item.label}</span>
             </div>
-            <input value={item.note || ""} onChange={e => setItemNote(selected, item.id, e.target.value)} placeholder="Note (optionnel)..." style={{ marginTop: 8, width: "100%", background: "none", border: "none", borderBottom: "1px solid #F3F4F6", fontSize: 12, color: "#6B7280", outline: "none", padding: "4px 0", boxSizing: "border-box" }} />
+            <input value={item.note || ""} onChange={e => setItemNote(selected, item.id, e.target.value)} placeholder="Note (optionnel)..." style={{ marginTop: 8, width: "100%", background: "none", border: "none", borderBottom: `1px solid ${theme.border}`, fontSize: 12, color: theme.textMuted, outline: "none", padding: "4px 0", boxSizing: "border-box" }} />
           </Card>
         ))}
-        {total === 0 && <EmptyState emoji="📋" text="Aucune action dans cette routine" />}
+        {total === 0 && <EmptyState emoji="🔄" text="Aucune action dans cette routine" />}
       </div>
     );
   }
@@ -2585,10 +2738,10 @@ const RoutinesSection = ({ data, update }) => {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>📋 Routines</div>
-        <Btn small onClick={() => { setName(""); setEmoji("🌅"); setItems([]); setNewItem(""); setCreateModal(true); }}>+ Nouvelle</Btn>
+        <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>🔄 Routines</div>
+        <Btn small onClick={openCreate}>+ Nouvelle</Btn>
       </div>
-      {routines.length === 0 && <EmptyState emoji="📋" text="Aucune routine créée" />}
+      {routines.length === 0 && <EmptyState emoji="🔄" text="Aucune routine créée" />}
       {routines.map(r => {
         const done = r.lastResetDate === todayStr() ? r.items.filter(i => i.checked).length : 0;
         const total = r.items.length;
@@ -2597,10 +2750,10 @@ const RoutinesSection = ({ data, update }) => {
             <div style={{ display: "flex", alignItems: "center" }} onClick={() => openDetail(r.id)}>
               <span style={{ fontSize: 28, marginRight: 14 }}>{r.emoji}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{done}/{total} ✓ aujourd'hui</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{r.name}</div>
+                <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>{done}/{total} ✓ aujourd'hui</div>
                 {total > 0 && (
-                  <div style={{ background: "#F3F4F6", borderRadius: 6, height: 4, marginTop: 6, overflow: "hidden" }}>
+                  <div style={{ background: theme.subtle, borderRadius: 6, height: 4, marginTop: 6, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${(done/total)*100}%`, background: "#7C3AED", borderRadius: 6, transition: "width .4s" }} />
                   </div>
                 )}
@@ -2611,36 +2764,48 @@ const RoutinesSection = ({ data, update }) => {
                   <Btn small variant="secondary" onClick={() => setConfirmDelete(null)}>Annuler</Btn>
                 </div>
               ) : (
-                <IconBtn onClick={e => { e.stopPropagation(); setConfirmDelete(r.id); }}>🗑</IconBtn>
+                <div style={{ display: "flex", gap: 4 }} onClick={e => e.stopPropagation()}>
+                  <IconBtn onClick={() => openEdit(r)}>✏️</IconBtn>
+                  <IconBtn onClick={() => setConfirmDelete(r.id)}>🗑</IconBtn>
+                </div>
               )}
             </div>
           </Card>
         );
       })}
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Nouvelle routine">
+
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setEditId(null); }} title={editId ? "Modifier la routine" : "Nouvelle routine"}>
         <Input label="Nom" value={name} onChange={e => setName(e.target.value)} placeholder="Routine du matin..." />
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>Emoji</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8 }}>Emoji</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {EMOJIS.map(e => (
-              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize: 22, padding: "6px 10px", borderRadius: 10, border: `2px solid ${emoji === e ? "#7C3AED" : "#E5E7EB"}`, background: emoji === e ? "#EDE9FE" : "#fff", cursor: "pointer" }}>{e}</button>
+              <button key={e} onClick={() => setEmoji(e)} style={{ fontSize: 22, padding: "6px 10px", borderRadius: 10, border: `2px solid ${emoji === e ? "#7C3AED" : theme.border}`, background: emoji === e ? "#EDE9FE" : theme.card, cursor: "pointer" }}>{e}</button>
             ))}
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>Actions</div>
-          {items.map((label, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</span>
-              <IconBtn onClick={() => setItems(items.filter((_, j) => j !== i))}>🗑</IconBtn>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8 }}>Actions</div>
+          {items.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <button onClick={() => moveItem(i, -1)} disabled={i === 0} style={{ fontSize: 9, padding: "1px 4px", borderRadius: 4, border: `1px solid ${theme.border}`, background: theme.subtle, cursor: i === 0 ? "default" : "pointer", color: i === 0 ? theme.textMuted : theme.text, opacity: i === 0 ? 0.35 : 1, lineHeight: 1 }}>↑</button>
+                <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1} style={{ fontSize: 9, padding: "1px 4px", borderRadius: 4, border: `1px solid ${theme.border}`, background: theme.subtle, cursor: i === items.length - 1 ? "default" : "pointer", color: i === items.length - 1 ? theme.textMuted : theme.text, opacity: i === items.length - 1 ? 0.35 : 1, lineHeight: 1 }}>↓</button>
+              </div>
+              <input
+                value={item.label}
+                onChange={e => setItems(items.map((it, j) => j === i ? { ...it, label: e.target.value } : it))}
+                style={{ flex: 1, border: `1.5px solid ${theme.inputBorder}`, borderRadius: 10, padding: "7px 10px", fontSize: 13, background: theme.input, color: theme.text, outline: "none" }}
+              />
+              <IconBtn onClick={() => setItems(items.filter((_, j) => j !== i))}>✕</IconBtn>
             </div>
           ))}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }} placeholder="Ex : Vitamine D..." style={{ flex: 1, border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "8px 12px", fontSize: 13, outline: "none" }} />
-            <Btn small onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}>+ Ajouter</Btn>
+            <input value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addItem(); }} placeholder="Ex : Vitamine D..." style={{ flex: 1, border: `1.5px solid ${theme.inputBorder}`, borderRadius: 10, padding: "8px 12px", fontSize: 13, background: theme.input, color: theme.text, outline: "none" }} />
+            <Btn small onClick={addItem}>+ Ajouter</Btn>
           </div>
         </div>
-        <Btn onClick={createRoutine} full>Créer la routine</Btn>
+        <Btn onClick={saveRoutine} full disabled={!name.trim()}>{editId ? "Enregistrer les modifications" : "Créer la routine"}</Btn>
       </Modal>
     </div>
   );
@@ -2655,20 +2820,22 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
-    try { return localStorage.getItem("darkMode") === "true"; } catch { return false; }
+    try { return localStorage.getItem("baby-tracker-dark") === "true"; } catch { return false; }
   });
 
   // ─── Profile state ───
   const [profiles, setProfiles] = useState(null);   // { [id]: { name, emoji, color } }
   const [profilesLoading, setProfilesLoading] = useState(true);
-  const [activeProfileId, setActiveProfileId] = useState(null);
+  const [activeProfileId, setActiveProfileId] = useState(() => {
+    try { return localStorage.getItem("baby-tracker-last-profile") || null; } catch { return null; }
+  });
 
   const saveTimer = useRef(null);
   const ignoreNext = useRef(false);
   const migrated = useRef(false);
 
   useEffect(() => {
-    try { localStorage.setItem("darkMode", darkMode); } catch {}
+    try { localStorage.setItem("baby-tracker-dark", darkMode); } catch {}
   }, [darkMode]);
 
   const theme = darkMode ? THEMES.dark : THEMES.light;
@@ -2680,6 +2847,14 @@ export default function App() {
       if (val !== null) {
         setProfiles(val);
         setProfilesLoading(false);
+        // Si le profil mémorisé n'existe plus, reset
+        setActiveProfileId(prev => {
+          if (prev && !val[prev]) {
+            try { localStorage.removeItem("baby-tracker-last-profile"); } catch {}
+            return null;
+          }
+          return prev;
+        });
         return;
       }
       // First launch: no profiles yet — migrate legacy data
@@ -2710,13 +2885,14 @@ export default function App() {
 
   // ─── Profile actions ───
   const selectProfile = (id) => {
-    try { localStorage.setItem("lastProfileId", id); } catch {}
+    try { localStorage.setItem("baby-tracker-last-profile", id); } catch {}
     setData(null);
     setSection("home");
     setActiveProfileId(id);
   };
 
   const switchProfile = () => {
+    try { localStorage.removeItem("baby-tracker-last-profile"); } catch {}
     setActiveProfileId(null);
     setData(null);
     setSection("home");
@@ -2812,7 +2988,7 @@ export default function App() {
     { key: "diapers", emoji: "🧷", label: "Couche" },
     { key: "home",    emoji: "🏠", label: "Home", isCenter: true },
     { key: "sleep",   emoji: "😴", label: "Sommeil" },
-    { key: "routines",emoji: "📋", label: "Routine" },
+    { key: "routines",emoji: "🔄", label: "Routine" },
   ];
 
   return (
