@@ -198,6 +198,7 @@ const defaultState = () => ({
   customFoods: {},
   exercises: {},
   customExercises: {},
+  books: [],
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -493,6 +494,7 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
     { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
     { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
     { key: "exercises", emoji: "🧘", label: "Éveil", value: (() => { const t = todayStr(); const checks = data.exercises?.[t] || {}; return `${Object.keys(checks).length} faits`; })(), color: "#A78BFA" },
+    { key: "books", emoji: "📖", label: "Bibliothèque", value: `${(data.books||[]).length} livre${(data.books||[]).length !== 1 ? "s" : ""}`, color: "#F59E0B" },
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
 
@@ -2041,6 +2043,162 @@ const SetupScreen = ({ onComplete }) => {
   );
 };
 
+// ─── Utilitaire : compression image → base64 ───
+const compressImage = (file, maxDim = 300, quality = 0.65) =>
+  new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+// ─── SECTION: Bibliothèque ───
+const BooksSection = ({ data, update }) => {
+  const { theme } = useTheme();
+  const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [title, setTitle] = useState("");
+  const [interest, setInterest] = useState(3);
+  const [date, setDate] = useState(todayStr());
+  const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const books = [...(data.books || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const filtered = search.trim() ? books.filter(b => b.title.toLowerCase().includes(search.trim().toLowerCase())) : books;
+
+  const resetForm = () => { setTitle(""); setInterest(3); setDate(todayStr()); setNote(""); setPhoto(null); setEditId(null); };
+  const openAdd = () => { resetForm(); setModal(true); };
+  const openEdit = (b) => { setEditId(b.id); setTitle(b.title); setInterest(b.interest || 3); setDate(b.date); setNote(b.note || ""); setPhoto(b.photo || null); setModal(true); };
+
+  const save = () => {
+    if (!title.trim()) return;
+    if (editId) {
+      update(d => { const b = d.books.find(x => x.id === editId); if (b) { b.title = title.trim(); b.interest = interest; b.date = date; b.note = note; b.photo = photo; } });
+    } else {
+      update(d => { d.books.push({ id: uid(), title: title.trim(), interest, date, note, photo }); });
+    }
+    setModal(false); resetForm();
+  };
+
+  const remove = (id) => update(d => { d.books = d.books.filter(x => x.id !== id); });
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoLoading(true);
+    setPhoto(await compressImage(file));
+    setPhotoLoading(false);
+  };
+
+  const total = books.length;
+  const byStars = [5, 4, 3, 2, 1].map(s => ({ stars: s, count: books.filter(b => b.interest === s).length }));
+  const maxCount = Math.max(...byStars.map(x => x.count), 1);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>📚 Bibliothèque</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{total} livre{total !== 1 ? "s" : ""} lus</div>
+        </div>
+        <Btn onClick={openAdd} small>+ Ajouter</Btn>
+      </div>
+
+      {/* Stats */}
+      {total > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          {byStars.filter(x => x.count > 0).map(({ stars, count }) => (
+            <div key={stars} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+              <span style={{ fontSize: 11, width: 58, flexShrink: 0, letterSpacing: -1 }}>{"⭐".repeat(stars)}</span>
+              <div style={{ flex: 1, height: 6, background: theme.subtle, borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(count / maxCount) * 100}%`, background: "linear-gradient(90deg, #FCD34D, #F59E0B)", borderRadius: 4, transition: "width .4s" }} />
+              </div>
+              <span style={{ fontSize: 11, color: theme.textMuted, fontWeight: 700, width: 16, textAlign: "right" }}>{count}</span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Recherche */}
+      {total > 10 && (
+        <div style={{ marginBottom: 14 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Rechercher un titre..."
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${theme.inputBorder}`, background: theme.input, color: theme.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+        </div>
+      )}
+
+      {filtered.length === 0 && <EmptyState emoji="📚" text={search ? "Aucun résultat" : "Aucun livre pour l'instant"} />}
+      {filtered.map(b => (
+        <Card key={b.id} onClick={() => openEdit(b)} style={{ marginBottom: 10, cursor: "pointer" }}>
+          <div style={{ display: "flex", gap: 12 }}>
+            {b.photo
+              ? <img src={b.photo} alt="" style={{ width: 60, height: 60, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+              : <div style={{ width: 60, height: 60, borderRadius: 10, background: theme.subtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>📖</div>
+            }
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: theme.text, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.title}</div>
+              <div style={{ fontSize: 13, marginBottom: 3, letterSpacing: -1 }}>{"⭐".repeat(b.interest || 0)}</div>
+              <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(b.date)}{b.note ? ` · ${b.note}` : ""}</div>
+            </div>
+            <span onClick={e => { e.stopPropagation(); remove(b.id); }}><IconBtn>🗑</IconBtn></span>
+          </div>
+        </Card>
+      ))}
+
+      <Modal open={modal} onClose={() => { setModal(false); resetForm(); }} title={editId ? "Modifier le livre" : "Ajouter un livre"}>
+        <Input label="Titre du livre" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Petit ours brun" autoFocus />
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Intérêt de bébé</label>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[1, 2, 3, 4, 5].map(s => (
+              <span key={s} onClick={() => setInterest(s)} style={{ fontSize: 30, cursor: "pointer", transition: "transform .1s", display: "inline-block", lineHeight: 1 }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.25)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}>
+                {s <= interest ? "⭐" : "☆"}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <Input label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Photo (optionnel)</label>
+          {photo && <img src={photo} alt="" style={{ width: "100%", maxHeight: 140, objectFit: "cover", borderRadius: 10, marginBottom: 8 }} />}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label style={{ flex: 1, padding: "9px 14px", borderRadius: 12, border: `1.5px dashed ${theme.inputBorder}`, background: theme.subtle, color: theme.textMuted, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {photoLoading ? "Compression..." : photo ? "Changer la photo" : "📷 Choisir une photo"}
+              <input type="file" accept="image/*" onChange={handlePhoto} style={{ display: "none" }} />
+            </label>
+            {photo && <Btn variant="danger" small onClick={() => setPhoto(null)}>✕</Btn>}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>Note (optionnel)</label>
+          <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Réaction de bébé, pages préférées..." rows={3}
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${theme.inputBorder}`, background: theme.input, color: theme.text, fontSize: 14, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+        </div>
+
+        <Btn onClick={save} disabled={!title.trim()} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
+      </Modal>
+    </div>
+  );
+};
+
 // ─── SECTION: Exercices / Éveil ───
 const DEFAULT_EXERCISES = {
   0:  ["Peau à peau","Tummy time (1-2min)","Suivi visuel doigt","Musique douce","Massage bébé","Parler/chanter"],
@@ -2160,7 +2318,7 @@ const ExercisesSection = ({ data, update }) => {
 const sanitize = (val) => {
   const def = defaultState();
   const merged = { ...def, ...(val || {}) };
-  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines"].forEach(k => {
+  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines","books"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
   ["foods","teeth","vaccines","milestonesChecked","customFoods","exercises","customExercises"].forEach(k => {
@@ -2495,6 +2653,7 @@ export default function App() {
     notes: <NotesSection data={data} update={update} />,
     routines: <RoutinesSection data={data} update={update} />,
     exercises: <ExercisesSection data={data} update={update} />,
+    books: <BooksSection data={data} update={update} />,
     pdf: <PdfSection data={data} />,
   };
 
