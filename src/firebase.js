@@ -66,4 +66,29 @@ export async function loadData() {
   }
 }
 
+// ─── API multi-profils ───
+
+const PROFILES_META_PATH = "baby-tracker/profiles-meta";
+const profileDataPath = (id) => `baby-tracker/profiles-data/${id}`;
+
+export function subscribeToProfilesMeta(callback) {
+  const r = ref(db, PROFILES_META_PATH);
+  const unsub = onValue(r, (snap) => callback(snap.val()), (err) => console.error("Firebase profiles error:", err));
+  return unsub;
+}
+
+export async function saveProfilesMeta(meta) {
+  try { await set(ref(db, PROFILES_META_PATH), meta); } catch (err) { console.error(err); }
+}
+
+export function subscribeToProfileData(profileId, callback) {
+  const r = ref(db, profileDataPath(profileId));
+  const unsub = onValue(r, (snap) => callback(snap.val()), (err) => console.error("Firebase profile data error:", err));
+  return unsub;
+}
+
+export async function saveProfileData(profileId, data) {
+  try { await set(ref(db, profileDataPath(profileId)), data); } catch (err) { console.error(err); }
+}
+
 export { db };

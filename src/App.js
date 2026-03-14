@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
-import { subscribeToData, saveData } from "./firebase";
+import { subscribeToProfilesMeta, saveProfilesMeta, subscribeToProfileData, saveProfileData, loadData } from "./firebase";
 
 // ─── Theme system ───
 const THEMES = {
@@ -345,8 +345,105 @@ const EmptyState = ({ emoji, text }) => {
   );
 };
 
+// ─── Profile system ───
+const PROFILE_EMOJIS = ["👶", "🍼", "🌟", "🐻", "🦁", "🐼", "🦊", "🐨", "🌸", "🌈", "⭐", "🎀", "🧸", "🦋"];
+const PROFILE_COLORS = ["#C4B5FD", "#A78BFA", "#F9A8D4", "#FCA5A5", "#86EFAC", "#93C5FD", "#FCD34D", "#6EE7B7"];
+
+const AddProfileModal = ({ onSave, onClose }) => {
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("👶");
+  const [color, setColor] = useState("#C4B5FD");
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#1A1A24", borderRadius: 24, padding: "28px 24px", width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}>
+        <h3 style={{ color: "#fff", margin: "0 0 22px", fontSize: 19, fontWeight: 800 }}>Nouveau profil</h3>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Prénom</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex : Imran" style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #2D2D3A", background: "#0F0F14", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Emoji</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {PROFILE_EMOJIS.map(em => (
+              <span key={em} onClick={() => setEmoji(em)} style={{ width: 40, height: 40, borderRadius: 10, background: emoji === em ? "#2D2D4A" : "transparent", border: `2px solid ${emoji === em ? "#A78BFA" : "transparent"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer" }}>{em}</span>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: 26 }}>
+          <label style={{ display: "block", color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Couleur</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {PROFILE_COLORS.map(c => (
+              <span key={c} onClick={() => setColor(c)} style={{ width: 30, height: 30, borderRadius: "50%", background: c, border: color === c ? "3px solid #fff" : "3px solid transparent", boxShadow: color === c ? "0 0 0 2px #A78BFA" : "none", cursor: "pointer" }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none", background: "#2D2D3A", color: "rgba(255,255,255,0.55)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Annuler</button>
+          <button onClick={() => { if (name.trim()) onSave({ name: name.trim(), emoji, color }); }} disabled={!name.trim()} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: name.trim() ? "linear-gradient(135deg,#A78BFA,#818CF8)" : "#2D2D3A", color: name.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontWeight: 700, fontSize: 14, cursor: name.trim() ? "pointer" : "default", transition: "all .2s" }}>Créer le profil</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProfileSelector = ({ profiles, onSelect, onAdd }) => {
+  const { darkMode, toggleDark } = useTheme();
+  const [showAdd, setShowAdd] = useState(false);
+  const lastId = (() => { try { return localStorage.getItem("lastProfileId"); } catch { return null; } })();
+  const profileList = Object.entries(profiles || {});
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #0D0D18 0%, #1A0533 55%, #0D0D18 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 6, fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>Baby Tracker</div>
+      <h1 style={{ color: "#fff", fontSize: 24, fontWeight: 900, marginBottom: 52, textAlign: "center", lineHeight: 1.35, margin: "0 0 52px" }}>
+        Qui suivons-nous<br />aujourd'hui ?
+      </h1>
+
+      {/* Profiles grid */}
+      <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center", marginBottom: 52, maxWidth: 420 }}>
+        {profileList.map(([id, p]) => {
+          const isLast = id === lastId;
+          return (
+            <div key={id} onClick={() => onSelect(id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <div style={{ width: 90, height: 90, borderRadius: 22, background: p.color || "#C4B5FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, border: isLast ? "3px solid rgba(255,255,255,0.85)" : "3px solid transparent", boxShadow: isLast ? "0 0 0 2px #A78BFA, 0 8px 28px rgba(167,139,250,0.45)" : "0 6px 20px rgba(0,0,0,0.4)", transition: "transform .15s, box-shadow .15s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.07)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}>
+                {p.emoji || "👶"}
+              </div>
+              <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{p.name}</div>
+              {isLast && <div style={{ fontSize: 10, color: "#A78BFA", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Récent</div>}
+            </div>
+          );
+        })}
+
+        {/* Add profile */}
+        <div onClick={() => setShowAdd(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          <div style={{ width: 90, height: 90, borderRadius: 22, background: "rgba(255,255,255,0.05)", border: "2.5px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, color: "rgba(255,255,255,0.4)", transition: "background .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}>
+            +
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 14 }}>Ajouter</div>
+        </div>
+      </div>
+
+      {/* Dark mode toggle */}
+      <button onClick={toggleDark} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "8px 16px", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontWeight: 700 }}>
+        {darkMode ? "☀️ Mode clair" : "🌙 Mode sombre"}
+      </button>
+
+      {showAdd && (
+        <AddProfileModal
+          onSave={(meta) => { onAdd(meta); setShowAdd(false); }}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+    </div>
+  );
+};
+
 // ─── SECTION: Dashboard Home ───
-const DashboardHome = ({ data, goTo }) => {
+const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
   const { darkMode, toggleDark } = useTheme();
   const age = babyAgeText(data.baby.birthDate);
   const todayB = todayItems(data.bottles);
@@ -399,9 +496,14 @@ const DashboardHome = ({ data, goTo }) => {
       <div style={{ background: "linear-gradient(135deg, #C4B5FD 0%, #A78BFA 35%, #818CF8 70%, #6366F1 100%)", borderRadius: 28, padding: "28px 24px 24px", marginBottom: 20, color: "#fff", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }} />
         <div style={{ position: "absolute", bottom: -25, left: 20, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
-        <button onClick={toggleDark} style={{ position: "absolute", top: 14, right: 16, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>
-          {darkMode ? "☀️" : "🌙"}
-        </button>
+        <div style={{ position: "absolute", top: 14, right: 16, display: "flex", gap: 6 }}>
+          {onSwitchProfile && (
+            <button onClick={onSwitchProfile} style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 13, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>Changer ↩</button>
+          )}
+          <button onClick={toggleDark} style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>
+            {darkMode ? "☀️" : "🌙"}
+          </button>
+        </div>
         <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
           {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
         </div>
@@ -1901,12 +2003,19 @@ export default function App() {
   const [data, setData] = useState(null);
   const [section, setSection] = useState("home");
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     try { return localStorage.getItem("darkMode") === "true"; } catch { return false; }
   });
+
+  // ─── Profile state ───
+  const [profiles, setProfiles] = useState(null);   // { [id]: { name, emoji, color } }
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const [activeProfileId, setActiveProfileId] = useState(null);
+
   const saveTimer = useRef(null);
   const ignoreNext = useRef(false);
+  const migrated = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem("darkMode", darkMode); } catch {}
@@ -1915,45 +2024,101 @@ export default function App() {
   const theme = darkMode ? THEMES.dark : THEMES.light;
   const toggleDark = () => setDarkMode(d => !d);
 
-  // Subscribe to Firebase real-time updates
+  // ─── Load profiles meta (+ one-time migration from legacy path) ───
   useEffect(() => {
-    const unsub = subscribeToData((val) => {
+    const unsub = subscribeToProfilesMeta(async (val) => {
+      if (val !== null) {
+        setProfiles(val);
+        setProfilesLoading(false);
+        return;
+      }
+      // First launch: no profiles yet — migrate legacy data
+      if (migrated.current) return;
+      migrated.current = true;
+      const legacy = await loadData();
+      const id = uid();
+      const meta = { [id]: { name: legacy?.baby?.name || "Bébé", emoji: "👶", color: "#C4B5FD" } };
+      await saveProfilesMeta(meta);
+      await saveProfileData(id, legacy || defaultState());
+      // subscription will fire again with val !== null
+    });
+    return unsub;
+  }, []);
+
+  // ─── Subscribe to active profile data ───
+  useEffect(() => {
+    if (!activeProfileId) return;
+    setLoading(true);
+    const unsub = subscribeToProfileData(activeProfileId, (val) => {
       if (ignoreNext.current) { ignoreNext.current = false; return; }
       setData(sanitize(val));
       setLoading(false);
       setSyncing(false);
     });
     return unsub;
-  }, []);
+  }, [activeProfileId]);
 
-  // Update helper with debounced save
+  // ─── Profile actions ───
+  const selectProfile = (id) => {
+    try { localStorage.setItem("lastProfileId", id); } catch {}
+    setData(null);
+    setSection("home");
+    setActiveProfileId(id);
+  };
+
+  const switchProfile = () => {
+    setActiveProfileId(null);
+    setData(null);
+    setSection("home");
+  };
+
+  const handleAddProfile = async (meta) => {
+    const id = uid();
+    const newMeta = { ...(profiles || {}), [id]: meta };
+    await saveProfilesMeta(newMeta);
+    await saveProfileData(id, defaultState());
+  };
+
+  // ─── Update helper with debounced save ───
   const update = useCallback((fn) => {
     setData(prev => {
       const next = sanitize(JSON.parse(JSON.stringify(prev || {})));
       fn(next);
       next._lastUpdated = new Date().toISOString();
-      // Debounced save to Firebase
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         setSyncing(true);
         ignoreNext.current = true;
-        saveData(next).then(() => setSyncing(false));
+        saveProfileData(activeProfileId, next).then(() => setSyncing(false));
       }, 600);
       return next;
     });
-  }, []);
+  }, [activeProfileId]);
 
-  if (loading) return (
+  // ─── Loading screen ───
+  const loadingScreen = (
     <>
       <style>{CSS}</style>
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F5F3FF" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0D0D18" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 52, marginBottom: 12, animation: "pulse 1.5s infinite" }}>👶</div>
-          <div style={{ color: "#7C3AED", fontWeight: 800, fontSize: 15 }}>Connexion...</div>
+          <div style={{ color: "#A78BFA", fontWeight: 800, fontSize: 15 }}>Connexion...</div>
         </div>
       </div>
     </>
   );
+
+  if (profilesLoading) return loadingScreen;
+
+  // ─── Profile selector (always shown when no active profile) ───
+  if (!activeProfileId) return (
+    <ThemeContext.Provider value={{ theme, darkMode, toggleDark }}>
+      <style>{CSS}</style>
+      <ProfileSelector profiles={profiles} onSelect={selectProfile} onAdd={handleAddProfile} />
+    </ThemeContext.Provider>
+  );
+
+  if (loading) return loadingScreen;
 
   if (!data) return null;
 
@@ -1966,13 +2131,13 @@ export default function App() {
         initial.setup = true;
         initial._lastUpdated = new Date().toISOString();
         setData(initial);
-        saveData(initial);
+        saveProfileData(activeProfileId, initial);
       }} />
     </>
   );
 
   const SECTIONS = {
-    home: <DashboardHome data={data} goTo={setSection} />,
+    home: <DashboardHome data={data} goTo={setSection} onSwitchProfile={switchProfile} />,
     bottles: <BottlesSection data={data} update={update} />,
     diapers: <DiapersSection data={data} update={update} />,
     sleep: <SleepSection data={data} update={update} />,
@@ -2011,7 +2176,7 @@ export default function App() {
         )}
 
         <div style={{ padding: "0 14px" }}>
-          {SECTIONS[section] || <DashboardHome data={data} goTo={setSection} toggleDark={toggleDark} />}
+          {SECTIONS[section] || SECTIONS.home}
         </div>
 
         {/* Bottom nav */}
