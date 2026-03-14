@@ -608,6 +608,7 @@ const BottlesSection = ({ data, update }) => {
   const [modalContent, setModalContent] = useState("lait");
   const [pendingMl, setPendingMl] = useState(null);
   const [sleepWarn, setSleepWarn] = useState(false);
+  const [editId, setEditId] = useState(null);
   const contentTimer = useRef(null);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
 
@@ -632,16 +633,24 @@ const BottlesSection = ({ data, update }) => {
     if (pendingMl) saveBottle(pendingMl, contentKey);
   };
 
+  const openEdit = (b) => {
+    setEditId(b.id); setAmount(String(b.amount)); setTime(b.time);
+    setNote(b.note || ""); setModalContent(b.content || "lait"); setModal(true);
+  };
+
   const add = () => {
     if (!(Number(amount) > 0)) return;
-    update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note, content: modalContent }); });
-    setModal(false); setAmount(""); setNote(""); setModalContent("lait");
-    triggerSleepWarn();
+    if (editId) {
+      update(d => { const b = d.bottles.find(x => x.id === editId); if (b) { b.amount = Number(amount); b.time = time; b.note = note; b.content = modalContent; } });
+    } else {
+      update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note, content: modalContent }); });
+      triggerSleepWarn();
+    }
+    setModal(false); setAmount(""); setNote(""); setModalContent("lait"); setEditId(null);
   };
 
   const remove = (id) => update(d => { d.bottles = d.bottles.filter(b => b.id !== id); });
   const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
-  const olderB = (data.bottles||[]).filter(b => !b.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
   const totalMl = dayB.reduce((s, b) => s + (b.amount || 0), 0);
 
   const contentTag = (b) => {
@@ -657,7 +666,7 @@ const BottlesSection = ({ data, update }) => {
           <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>🍼 Biberons</div>
           <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{dayB.length} biberon{dayB.length > 1 ? "s" : ""} — {totalMl} ml</div>
         </div>
-        <Btn onClick={() => { setTime(nowStr()); setModalContent("lait"); setModal(true); }} small>+ Détail</Btn>
+        <Btn onClick={() => { setEditId(null); setTime(nowStr()); setModalContent("lait"); setModal(true); }} small>+ Détail</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
@@ -707,30 +716,18 @@ const BottlesSection = ({ data, update }) => {
       )}
       {dayB.length === 0 && <EmptyState emoji="🍼" text={`Aucun biberon — ${dateLabel}`} />}
       {dayB.map(b => (
-        <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        <Card key={b.id} onClick={() => openEdit(b)} style={{ display: "flex", alignItems: "center", marginBottom: 8, cursor: "pointer", position: "relative" }}>
           <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{b.amount} ml{contentTag(b)}</div>
             <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(b.time)}{b.note ? ` · ${b.note}` : ""}</div>
           </div>
-          <IconBtn onClick={() => remove(b.id)}>🗑</IconBtn>
+          <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
+          <span onClick={e => { e.stopPropagation(); remove(b.id); }}><IconBtn>🗑</IconBtn></span>
         </Card>
       ))}
 
-      {dayOffset === 0 && olderB.length > 0 && (
-        <details style={{ marginTop: 14 }}>
-          <summary style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted, cursor: "pointer", padding: "8px 0" }}>Historique ({olderB.length})</summary>
-          {olderB.slice(0, 50).map(b => (
-            <div key={b.id} style={{ display: "flex", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${theme.border}`, fontSize: 13 }}>
-              <span style={{ flex: 1, fontWeight: 700, color: theme.text }}>{b.amount} ml{contentTag(b)}</span>
-              <span style={{ color: theme.textMuted }}>{fmt(b.time)} {fmtTime(b.time)}</span>
-              <IconBtn onClick={() => remove(b.id)}>🗑</IconBtn>
-            </div>
-          ))}
-        </details>
-      )}
-
-      <Modal open={modal} onClose={() => setModal(false)} title="Ajouter un biberon">
+      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier le biberon" : "Ajouter un biberon"}>
         <Input label="Quantité (ml)" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="120" />
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Contenu</label>
@@ -742,7 +739,7 @@ const BottlesSection = ({ data, update }) => {
         </div>
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Note (optionnel)" value={note} onChange={e => setNote(e.target.value)} placeholder="Refusé après 60ml..." />
-        <Btn onClick={add} full style={{ marginTop: 4 }}>Enregistrer</Btn>
+        <Btn onClick={add} full style={{ marginTop: 4 }}>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
     </div>
   );
@@ -760,6 +757,7 @@ const DiapersSection = ({ data, update }) => {
   const [consistency, setConsistency] = useState(null);
   const [color, setColor] = useState(null);
   const [sleepWarn, setSleepWarn] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteVal, setEditingNoteVal] = useState("");
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
@@ -808,7 +806,17 @@ const DiapersSection = ({ data, update }) => {
     setColor(col);
   };
 
-  const add = () => { update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); }); setModal(false); setNote(""); triggerSleepWarn(); };
+  const openEdit = (d) => { setEditId(d.id); setModalType(d.type); setTime(d.time); setNote(d.note || ""); setModal(true); };
+
+  const add = () => {
+    if (editId) {
+      update(d => { const e = d.diapers.find(x => x.id === editId); if (e) { e.type = modalType; e.time = time; e.note = note; } });
+    } else {
+      update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); });
+      triggerSleepWarn();
+    }
+    setModal(false); setNote(""); setEditId(null);
+  };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
   const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
 
@@ -830,7 +838,7 @@ const DiapersSection = ({ data, update }) => {
           <div style={{ fontSize: 22, fontWeight: 900 }}>🧷 Couches</div>
           <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{todayD.length} couche{todayD.length > 1 ? "s" : ""}</div>
         </div>
-        <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Détail</Btn>
+        <Btn onClick={() => { setEditId(null); setTime(nowStr()); setNote(""); setModal(true); }} small>+ Détail</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
@@ -915,14 +923,15 @@ const DiapersSection = ({ data, update }) => {
       )}
       {todayD.length === 0 && <EmptyState emoji="🧷" text={`Aucune couche — ${dateLabel}`} />}
       {todayD.map(d => (
-        <Card key={d.id} style={{ marginBottom: 8 }}>
+        <Card key={d.id} onClick={() => openEdit(d)} style={{ marginBottom: 8, cursor: "pointer" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{diapersLabel(d)}</div>
               <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(d.time)}</div>
             </div>
-            <IconBtn onClick={() => remove(d.id)}>🗑</IconBtn>
+            <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
+            <span onClick={e => { e.stopPropagation(); remove(d.id); }}><IconBtn>🗑</IconBtn></span>
           </div>
           {/* Note inline */}
           {editingNoteId === d.id ? (
@@ -933,12 +942,13 @@ const DiapersSection = ({ data, update }) => {
               onBlur={() => saveNote(d.id, editingNoteVal)}
               onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingNoteId(null); }}
               placeholder="Note..."
+              onClick={e => e.stopPropagation()}
               style={{ display: "block", width: "100%", marginTop: 6, fontSize: 12, border: "none", borderBottom: `1.5px solid #A78BFA`, outline: "none", background: "transparent", color: theme.text, padding: "2px 0", boxSizing: "border-box", fontFamily: "inherit" }}
             />
           ) : (
             <div
-              onClick={() => { setEditingNoteId(d.id); setEditingNoteVal(d.note || ""); }}
-              style={{ marginTop: 5, fontSize: 11, color: theme.textMuted, fontStyle: "italic", cursor: "pointer" }}
+              onClick={e => { e.stopPropagation(); setEditingNoteId(d.id); setEditingNoteVal(d.note || ""); }}
+              style={{ marginTop: 5, fontSize: 11, color: theme.textMuted, fontStyle: "italic", cursor: "text" }}
             >
               {d.note || "Ajouter une note..."}
             </div>
@@ -946,13 +956,13 @@ const DiapersSection = ({ data, update }) => {
         </Card>
       ))}
 
-      <Modal open={modal} onClose={() => setModal(false)} title="Couche">
+      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier la couche" : "Couche"}>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {["pipi", "caca", "mixte"].map(t => <Chip key={t} active={modalType === t} onClick={() => setModalType(t)} color="#F59E0B">{TYPE_EMOJIS[t]} {TYPE_LABELS[t]}</Chip>)}
         </div>
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Note" value={note} onChange={e => setNote(e.target.value)} placeholder="Couleur, consistance..." />
-        <Btn onClick={add} full>Enregistrer</Btn>
+        <Btn onClick={add} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
     </div>
   );
@@ -960,12 +970,25 @@ const DiapersSection = ({ data, update }) => {
 
 // ─── SECTION: Sleep ───
 const SleepSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [start, setStart] = useState(nowStr());
   const [end, setEnd] = useState("");
   const [type, setType] = useState("sieste");
+  const [editId, setEditId] = useState(null);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
-  const add = () => { update(d => { d.sleep.push({ id: uid(), start, end: end || null, type }); }); setModal(false); };
+
+  const openEdit = (s) => { setEditId(s.id); setStart(s.start); setEnd(s.end || ""); setType(s.type || "sieste"); setModal(true); };
+
+  const add = () => {
+    if (editId) {
+      update(d => { const s = d.sleep.find(x => x.id === editId); if (s) { s.start = start; s.end = end || null; s.type = type; } });
+    } else {
+      update(d => { d.sleep.push({ id: uid(), start, end: end || null, type }); });
+    }
+    setModal(false); setEditId(null);
+  };
+
   const remove = (id) => update(d => { d.sleep = d.sleep.filter(x => x.id !== id); });
   const ongoing = (data.sleep||[]).find(s => !s.end);
   const dayItems = [...(data.sleep||[])].filter(s => s.start?.startsWith(dateStr)).sort((a, b) => b.start.localeCompare(a.start));
@@ -975,7 +998,7 @@ const SleepSection = ({ data, update }) => {
     <div ref={containerRef}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 900 }}>😴 Sommeil</div>
-        <Btn onClick={() => { setStart(nowStr()); setEnd(""); setModal(true); }} small>+ Manuel</Btn>
+        <Btn onClick={() => { setEditId(null); setStart(nowStr()); setEnd(""); setType("sieste"); setModal(true); }} small>+ Manuel</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
@@ -992,23 +1015,24 @@ const SleepSection = ({ data, update }) => {
 
       {dayItems.length === 0 && <EmptyState emoji="😴" text={`Aucune sieste — ${dateLabel}`} />}
       {dayItems.map(s => (
-        <Card key={s.id} highlighted={!s.end} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ display: "flex", alignItems: "center", marginBottom: 8, cursor: "pointer" }}>
           <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? "💤" : s.type === "nuit" ? "🌙" : "😴"}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>{dur(s)}</div>
-            <div style={{ fontSize: 12, color: "#9CA3AF" }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
+            <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
           </div>
-          <IconBtn onClick={() => remove(s.id)}>🗑</IconBtn>
+          <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
+          <span onClick={e => { e.stopPropagation(); remove(s.id); }}><IconBtn>🗑</IconBtn></span>
         </Card>
       ))}
 
-      <Modal open={modal} onClose={() => setModal(false)} title="Ajouter sommeil">
+      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier le sommeil" : "Ajouter sommeil"}>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {["sieste", "nuit"].map(t => <Chip key={t} active={type === t} onClick={() => setType(t)} color="#6366F1">{t === "nuit" ? "🌙" : "💤"} {t}</Chip>)}
         </div>
         <Input label="Début" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} />
         <Input label="Fin (vide = en cours)" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} />
-        <Btn onClick={add} full>Enregistrer</Btn>
+        <Btn onClick={add} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
     </div>
   );
