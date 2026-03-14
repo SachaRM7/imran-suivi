@@ -491,10 +491,10 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
     { key: "medicines", emoji: "💊", label: "Médicaments", value: `${(data.medicines||[]).length}`, color: "#EF4444" },
     { key: "temperature", emoji: "🌡️", label: "Température", value: (data.temperature||[]).length ? `${data.temperature[data.temperature.length-1].value}°C` : "—", color: "#F97316" },
     { key: "baths", emoji: "🛁", label: "Bains", value: `${todayItems(data.baths).length} aujourd'hui`, color: "#06B6D4" },
-    { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
-    { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
     { key: "exercises", emoji: "🧘", label: "Éveil", value: (() => { const t = todayStr(); const checks = data.exercises?.[t] || {}; return `${Object.keys(checks).length} faits`; })(), color: "#A78BFA" },
     { key: "books", emoji: "📖", label: "Bibliothèque", value: `${(data.books||[]).length} livre${(data.books||[]).length !== 1 ? "s" : ""}`, color: "#F59E0B" },
+    { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
+    { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
 
@@ -1106,22 +1106,151 @@ const SleepSection = ({ data, update }) => {
 
 // ─── Mr Cuisine recipes ───
 const MR_CUISINE_RECIPES = [
-  { name: "Purée carotte-patate douce", emoji: "🥕", ingredients: ["Carotte", "Patate douce"], ageMin: 4, steps: "Éplucher et couper en dés. Mettre dans le bol avec 200ml d'eau. Programme Vapeur 15min. Mixer vitesse 7 pendant 30s. Ajouter un filet d'huile d'olive." },
-  { name: "Compote pomme-poire", emoji: "🍎", ingredients: ["Pomme", "Poire"], ageMin: 4, steps: "Éplucher, épépiner et couper. Programme Vapeur 12min. Mixer vitesse 5 pendant 20s. Servir tiède ou froid." },
-  { name: "Purée brocoli-pomme de terre", emoji: "🥦", ingredients: ["Brocoli", "Pomme de terre"], ageMin: 5, steps: "Couper le brocoli en fleurettes, éplucher la pomme de terre. 200ml d'eau. Programme Vapeur 15min. Mixer vitesse 8 pendant 40s." },
-  { name: "Velouté courgette-semoule", emoji: "🫑", ingredients: ["Courgette", "Semoule"], ageMin: 5, steps: "Couper la courgette. Programme Vapeur 10min. Ajouter 2 cuillères de semoule cuite. Mixer vitesse 6 pendant 20s." },
-  { name: "Purée épinard-riz", emoji: "🥬", ingredients: ["Épinard", "Riz"], ageMin: 6, steps: "Blanchir les épinards. Cuire le riz séparément. Mixer les épinards vitesse 8 pendant 45s. Incorporer le riz et mixer à nouveau vitesse 5." },
-  { name: "Poulet carotte riz", emoji: "🍗", ingredients: ["Poulet", "Carotte", "Riz"], ageMin: 7, steps: "Couper le poulet et la carotte. Programme Vapeur 20min. Cuire le riz séparément. Tout mixer vitesse 6 pendant 30s." },
-  { name: "Saumon patate douce", emoji: "🐟", ingredients: ["Saumon", "Patate douce"], ageMin: 7, steps: "Couper le saumon sans arêtes. Éplucher la patate douce. Programme Vapeur 15min. Mixer vitesse 7 pendant 25s. Vérifier l'absence d'arêtes." },
-  { name: "Banane flocons d'avoine", emoji: "🍌", ingredients: ["Banane", "Flocons d'avoine"], ageMin: 5, steps: "Écraser la banane à la fourchette. Cuire les flocons d'avoine avec du lait (ratio 3:1) 3min au micro-ondes. Mélanger les deux." },
-  { name: "Potiron lentilles corail", emoji: "🎃", ingredients: ["Potiron", "Lentilles rouges"], ageMin: 6, steps: "Couper le potiron. Rincer les lentilles. 300ml d'eau. Programme Vapeur 20min. Mixer vitesse 8 pendant 40s. Assaisonner légèrement." },
-  { name: "Poireaux pomme de terre", emoji: "🧅", ingredients: ["Poireau", "Pomme de terre"], ageMin: 5, steps: "Couper le poireau (partie verte et blanche). Éplucher la pomme de terre. 200ml d'eau. Programme Vapeur 18min. Mixer vitesse 7 pendant 35s." },
-  { name: "Compote pêche abricot", emoji: "🍑", ingredients: ["Pêche", "Abricot"], ageMin: 4, steps: "Éplucher et dénoyauter. Programme Vapeur 10min. Mixer vitesse 5 pendant 15s. Parfait servi frais." },
-  { name: "Haricots verts carotte", emoji: "🫘", ingredients: ["Haricots verts", "Carotte"], ageMin: 5, steps: "Équeter les haricots, couper la carotte. 250ml d'eau. Programme Vapeur 18min. Mixer vitesse 8 pendant 45s pour texture lisse." },
-  { name: "Bœuf carotte patate douce", emoji: "🥩", ingredients: ["Bœuf", "Carotte", "Patate douce"], ageMin: 8, steps: "Couper le bœuf en petits morceaux. Éplucher et couper les légumes. 300ml d'eau. Programme Vapeur 25min. Mixer vitesse 7 pendant 40s." },
-  { name: "Mangue banane", emoji: "🥭", ingredients: ["Mangue", "Banane"], ageMin: 5, steps: "Éplucher et couper. Pas besoin de cuisson ! Mixer à froid vitesse 7 pendant 20s. Servir immédiatement." },
-  { name: "Pois chiches courgette", emoji: "🫛", ingredients: ["Pois chiches", "Courgette"], ageMin: 7, steps: "Utiliser des pois chiches en boîte (rincés). Couper la courgette. Programme Vapeur 10min. Mixer vitesse 8 pendant 50s pour texture homogène." },
-  { name: "Butternut pomme cannelle", emoji: "🍂", ingredients: ["Butternut", "Pomme"], ageMin: 5, steps: "Éplucher et couper. 200ml d'eau. Programme Vapeur 15min. Une pincée de cannelle (dès 6 mois). Mixer vitesse 7 pendant 30s." },
+  {
+    name: "Purée carotte-patate douce", emoji: "🥕", ageMin: 4, basePortions: 2,
+    ingredients: [
+      { name: "Carotte", qty: 150, unit: "g" },
+      { name: "Patate douce", qty: 100, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Éplucher et couper en dés. Mettre dans le bol avec l'eau. Programme Vapeur 15min. Mixer vitesse 7 pendant 30s. Ajouter un filet d'huile d'olive.",
+  },
+  {
+    name: "Compote pomme-poire", emoji: "🍎", ageMin: 4, basePortions: 3,
+    ingredients: [
+      { name: "Pomme", qty: 200, unit: "g" },
+      { name: "Poire", qty: 150, unit: "g" },
+      { name: "Eau", qty: 50, unit: "ml" },
+    ],
+    steps: "Éplucher, épépiner et couper. Programme Vapeur 12min. Mixer vitesse 5 pendant 20s. Servir tiède ou froid.",
+  },
+  {
+    name: "Purée brocoli-pomme de terre", emoji: "🥦", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Brocoli", qty: 150, unit: "g" },
+      { name: "Pomme de terre", qty: 100, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Couper le brocoli en fleurettes, éplucher la pomme de terre. Programme Vapeur 15min. Mixer vitesse 8 pendant 40s.",
+  },
+  {
+    name: "Velouté courgette-semoule", emoji: "🫑", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Courgette", qty: 200, unit: "g" },
+      { name: "Semoule", qty: 30, unit: "g" },
+      { name: "Eau", qty: 150, unit: "ml" },
+    ],
+    steps: "Couper la courgette. Programme Vapeur 10min. Ajouter la semoule cuite. Mixer vitesse 6 pendant 20s.",
+  },
+  {
+    name: "Purée épinard-riz", emoji: "🥬", ageMin: 6, basePortions: 2,
+    ingredients: [
+      { name: "Épinard", qty: 150, unit: "g" },
+      { name: "Riz", qty: 40, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Blanchir les épinards. Cuire le riz séparément. Mixer les épinards vitesse 8 pendant 45s. Incorporer le riz et mixer à nouveau vitesse 5.",
+  },
+  {
+    name: "Poulet carotte riz", emoji: "🍗", ageMin: 7, basePortions: 2,
+    ingredients: [
+      { name: "Poulet", qty: 80, unit: "g" },
+      { name: "Carotte", qty: 120, unit: "g" },
+      { name: "Riz", qty: 40, unit: "g" },
+      { name: "Eau", qty: 250, unit: "ml" },
+    ],
+    steps: "Couper le poulet et la carotte. Programme Vapeur 20min. Cuire le riz séparément. Tout mixer vitesse 6 pendant 30s.",
+  },
+  {
+    name: "Saumon patate douce", emoji: "🐟", ageMin: 7, basePortions: 2,
+    ingredients: [
+      { name: "Saumon", qty: 80, unit: "g" },
+      { name: "Patate douce", qty: 150, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Couper le saumon sans arêtes. Éplucher la patate douce. Programme Vapeur 15min. Mixer vitesse 7 pendant 25s. Vérifier l'absence d'arêtes.",
+  },
+  {
+    name: "Banane flocons d'avoine", emoji: "🍌", ageMin: 5, basePortions: 1,
+    ingredients: [
+      { name: "Banane", qty: 100, unit: "g" },
+      { name: "Flocons d'avoine", qty: 30, unit: "g" },
+      { name: "Lait", qty: 100, unit: "ml" },
+    ],
+    steps: "Écraser la banane à la fourchette. Cuire les flocons d'avoine avec le lait (3min micro-ondes). Mélanger les deux.",
+  },
+  {
+    name: "Potiron lentilles corail", emoji: "🎃", ageMin: 6, basePortions: 3,
+    ingredients: [
+      { name: "Potiron", qty: 200, unit: "g" },
+      { name: "Lentilles rouges", qty: 60, unit: "g" },
+      { name: "Eau", qty: 300, unit: "ml" },
+    ],
+    steps: "Couper le potiron. Rincer les lentilles. Programme Vapeur 20min. Mixer vitesse 8 pendant 40s. Assaisonner légèrement.",
+  },
+  {
+    name: "Poireaux pomme de terre", emoji: "🧅", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Poireau", qty: 150, unit: "g" },
+      { name: "Pomme de terre", qty: 120, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Couper le poireau (partie verte et blanche). Éplucher la pomme de terre. Programme Vapeur 18min. Mixer vitesse 7 pendant 35s.",
+  },
+  {
+    name: "Compote pêche abricot", emoji: "🍑", ageMin: 4, basePortions: 3,
+    ingredients: [
+      { name: "Pêche", qty: 180, unit: "g" },
+      { name: "Abricot", qty: 120, unit: "g" },
+      { name: "Eau", qty: 30, unit: "ml" },
+    ],
+    steps: "Éplucher et dénoyauter. Programme Vapeur 10min. Mixer vitesse 5 pendant 15s. Parfait servi frais.",
+  },
+  {
+    name: "Haricots verts carotte", emoji: "🫘", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Haricots verts", qty: 150, unit: "g" },
+      { name: "Carotte", qty: 100, unit: "g" },
+      { name: "Eau", qty: 250, unit: "ml" },
+    ],
+    steps: "Équeter les haricots, couper la carotte. Programme Vapeur 18min. Mixer vitesse 8 pendant 45s pour texture lisse.",
+  },
+  {
+    name: "Bœuf carotte patate douce", emoji: "🥩", ageMin: 8, basePortions: 2,
+    ingredients: [
+      { name: "Bœuf", qty: 80, unit: "g" },
+      { name: "Carotte", qty: 100, unit: "g" },
+      { name: "Patate douce", qty: 100, unit: "g" },
+      { name: "Eau", qty: 300, unit: "ml" },
+    ],
+    steps: "Couper le bœuf en petits morceaux. Éplucher et couper les légumes. Programme Vapeur 25min. Mixer vitesse 7 pendant 40s.",
+  },
+  {
+    name: "Mangue banane", emoji: "🥭", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Mangue", qty: 150, unit: "g" },
+      { name: "Banane", qty: 100, unit: "g" },
+    ],
+    steps: "Éplucher et couper. Pas besoin de cuisson ! Mixer à froid vitesse 7 pendant 20s. Servir immédiatement.",
+  },
+  {
+    name: "Pois chiches courgette", emoji: "🫛", ageMin: 7, basePortions: 2,
+    ingredients: [
+      { name: "Pois chiches", qty: 80, unit: "g" },
+      { name: "Courgette", qty: 150, unit: "g" },
+      { name: "Eau", qty: 150, unit: "ml" },
+    ],
+    steps: "Utiliser des pois chiches en boîte (rincés). Couper la courgette. Programme Vapeur 10min. Mixer vitesse 8 pendant 50s pour texture homogène.",
+  },
+  {
+    name: "Butternut pomme cannelle", emoji: "🍂", ageMin: 5, basePortions: 2,
+    ingredients: [
+      { name: "Butternut", qty: 180, unit: "g" },
+      { name: "Pomme", qty: 100, unit: "g" },
+      { name: "Eau", qty: 200, unit: "ml" },
+    ],
+    steps: "Éplucher et couper. Programme Vapeur 15min. Une pincée de cannelle (dès 6 mois). Mixer vitesse 7 pendant 30s.",
+  },
 ];
 
 // ─── SECTION: Food ───
@@ -1132,6 +1261,7 @@ const FoodSection = ({ data, update }) => {
   const [addFoodCat, setAddFoodCat] = useState(null); // null = fermé, sinon = catégorie pré-sélectionnée
   const [customName, setCustomName] = useState("");
   const [recipeModal, setRecipeModal] = useState(null);
+  const [portions, setPortions] = useState(1);
   const [onlyCompatible, setOnlyCompatible] = useState(false);
 
   const toggle = (name) => update(d => { d.foods[name] ? delete d.foods[name] : d.foods[name] = { date: todayStr(), reaction: "ok" }; });
@@ -1158,7 +1288,7 @@ const FoodSection = ({ data, update }) => {
 
   const validated = new Set(Object.keys(data.foods||{}).filter(k => data.foods[k]));
   const recipes = onlyCompatible
-    ? MR_CUISINE_RECIPES.filter(r => r.ingredients.every(i => validated.has(i)))
+    ? MR_CUISINE_RECIPES.filter(r => r.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait").every(i => validated.has(i.name)))
     : MR_CUISINE_RECIPES;
 
   const renderFoodItem = (food, isCustom = false) => {
@@ -1229,17 +1359,18 @@ const FoodSection = ({ data, update }) => {
           </div>
           {recipes.length === 0 && <EmptyState emoji="🍳" text="Aucune recette compatible pour l'instant" />}
           {recipes.map((recipe, i) => {
-            const missing = recipe.ingredients.filter(ing => !validated.has(ing));
+            const realIngs = recipe.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait");
+            const missing = realIngs.filter(ing => !validated.has(ing.name));
             const compatible = missing.length === 0;
             return (
-              <Card key={i} onClick={() => setRecipeModal(recipe)} style={{ marginBottom: 10, cursor: "pointer" }}>
+              <Card key={i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); }} style={{ marginBottom: 10, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, color: theme.text }}>{recipe.name}</div>
-                    <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>≥ {recipe.ageMin} mois · {recipe.ingredients.join(", ")}</div>
+                    <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>≥ {recipe.ageMin} mois · {realIngs.map(i => i.name).join(", ")}</div>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
-                      {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.join(", ")}`}
+                      {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.map(i => i.name).join(", ")}`}
                     </span>
                   </div>
                 </div>
@@ -1259,19 +1390,38 @@ const FoodSection = ({ data, update }) => {
       </Modal>
 
       <Modal open={!!recipeModal} onClose={() => setRecipeModal(null)} title={recipeModal ? `${recipeModal.emoji} ${recipeModal.name}` : ""}>
-        {recipeModal && (
-          <>
-            <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>INGRÉDIENTS</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-              {recipeModal.ingredients.map(ing => (
-                <span key={ing} style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: validated.has(ing) ? "#F0FDF4" : "#FEF2F2", color: validated.has(ing) ? "#166534" : "#991B1B", border: `1px solid ${validated.has(ing) ? "#86EFAC" : "#FECACA"}` }}>{validated.has(ing) ? "✓ " : "✗ "}{ing}</span>
-              ))}
-            </div>
-            <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>ÉTAPES MR CUISINE</div>
-            <div style={{ fontSize: 13, lineHeight: 1.6, color: "#374151", background: "#F9FAFB", borderRadius: 12, padding: 14 }}>{recipeModal.steps}</div>
-            <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, textAlign: "center" }}>Dès {recipeModal.ageMin} mois</div>
-          </>
-        )}
+        {recipeModal && (() => {
+          const mult = portions / recipeModal.basePortions;
+          return (
+            <>
+              {/* Portions selector */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.subtle, borderRadius: 12, padding: "10px 14px", marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: theme.text }}>Portions</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button onClick={() => setPortions(p => Math.max(1, p - 1))} style={{ width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${theme.border}`, background: theme.card, fontSize: 16, fontWeight: 700, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: "#7C3AED", minWidth: 24, textAlign: "center" }}>{portions}</span>
+                  <button onClick={() => setPortions(p => p + 1)} style={{ width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${theme.border}`, background: theme.card, fontSize: 16, fontWeight: 700, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>INGRÉDIENTS</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                {recipeModal.ingredients.map(ing => {
+                  const isNeutral = ing.name === "Eau" || ing.name === "Lait";
+                  const ok = isNeutral || validated.has(ing.name);
+                  const scaledQty = Math.round(ing.qty * mult);
+                  return (
+                    <span key={ing.name} style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: ok ? "#F0FDF4" : "#FEF2F2", color: ok ? "#166534" : "#991B1B", border: `1px solid ${ok ? "#86EFAC" : "#FECACA"}` }}>
+                      {ok ? "✓ " : "✗ "}{scaledQty}{ing.unit} {ing.name}
+                    </span>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700, marginBottom: 8 }}>ÉTAPES MR CUISINE</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "#374151", background: "#F9FAFB", borderRadius: 12, padding: 14 }}>{recipeModal.steps}</div>
+              <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, textAlign: "center" }}>Dès {recipeModal.ageMin} mois</div>
+            </>
+          );
+        })()}
       </Modal>
     </div>
   );
