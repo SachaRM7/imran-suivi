@@ -1004,6 +1004,12 @@ const SleepSection = ({ data, update }) => {
   const [editingNoteVal, setEditingNoteVal] = useState("");
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
 
+  const isNightHour = (dateTimeStr) => {
+    const h = dateTimeStr ? new Date(dateTimeStr).getHours() : new Date().getHours();
+    return h >= 20 || h < 7;
+  };
+  const typeFromHour = (dateTimeStr) => isNightHour(dateTimeStr) ? "nuit" : "sieste";
+
   const openEdit = (s) => { setEditId(s.id); setStart(s.start); setEnd(s.end || ""); setType(s.type || "sieste"); setNote(s.note || ""); setModal(true); };
 
   const add = () => {
@@ -1022,6 +1028,7 @@ const SleepSection = ({ data, update }) => {
 
   const remove = (id) => update(d => { d.sleep = d.sleep.filter(x => x.id !== id); });
   const ongoing = (data.sleep||[]).find(s => !s.end);
+  const isNight = ongoing?.type === "nuit";
   const dayItems = [...(data.sleep||[])].filter(s => s.start?.startsWith(dateStr)).sort((a, b) => b.start.localeCompare(a.start));
   const dur = (s) => { if (!s.end) return "En cours 💤"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
 
@@ -1029,7 +1036,7 @@ const SleepSection = ({ data, update }) => {
     <div ref={containerRef}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 900 }}>😴 Sommeil</div>
-        <Btn onClick={() => { setEditId(null); setStart(nowStr()); setEnd(""); setType("sieste"); setModal(true); }} small>+ Manuel</Btn>
+        <Btn onClick={() => { const t = typeFromHour(null); setEditId(null); setStart(nowStr()); setEnd(""); setType(t); setNote(""); setModal(true); }} small>+ Manuel</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
@@ -1037,9 +1044,13 @@ const SleepSection = ({ data, update }) => {
       {dayOffset === 0 && (
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
           {!ongoing ? (
-            <Btn variant="secondary" full onClick={() => update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: "sieste" }); })}>💤 Début sieste</Btn>
+            <Btn variant="secondary" full onClick={() => { const t = typeFromHour(null); update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: t, note: "" }); }); }}>
+              {isNightHour(null) ? "🌙 Début nuit" : "💤 Début sieste"}
+            </Btn>
           ) : (
-            <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })}>⏰ Fin sieste ({dur(ongoing)})</Btn>
+            <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })}>
+              {isNight ? `☀️ Fin de nuit (${dur(ongoing)})` : `⏰ Fin sieste (${dur(ongoing)})`}
+            </Btn>
           )}
         </div>
       )}
@@ -1048,7 +1059,7 @@ const SleepSection = ({ data, update }) => {
       {dayItems.map(s => (
         <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ marginBottom: 8, cursor: "pointer" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? "💤" : s.type === "nuit" ? "🌙" : "😴"}</span>
+            <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? (s.type === "nuit" ? "🌙" : "💤") : s.type === "nuit" ? "🌙" : "😴"}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
               <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
@@ -1077,7 +1088,7 @@ const SleepSection = ({ data, update }) => {
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {["sieste", "nuit"].map(t => <Chip key={t} active={type === t} onClick={() => setType(t)} color="#6366F1">{t === "nuit" ? "🌙" : "💤"} {t}</Chip>)}
         </div>
-        <Input label="Début" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} />
+        <Input label="Début" type="datetime-local" value={start} onChange={e => { setStart(e.target.value); if (!editId) setType(typeFromHour(e.target.value)); }} />
         <Input label="Fin (vide = en cours)" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} />
         <Input label="Note (optionnel)" value={note} onChange={e => setNote(e.target.value)} placeholder="Agité, dents..." />
         <Btn onClick={add} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
