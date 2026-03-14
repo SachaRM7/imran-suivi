@@ -196,6 +196,8 @@ const defaultState = () => ({
   temperature: [],
   routines: [],
   customFoods: {},
+  exercises: {},
+  customExercises: {},
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -490,6 +492,7 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
     { key: "baths", emoji: "🛁", label: "Bains", value: `${todayItems(data.baths).length} aujourd'hui`, color: "#06B6D4" },
     { key: "notes", emoji: "📝", label: "Journal", value: `${(data.notes||[]).length} notes`, color: "#8B5CF6" },
     { key: "routines", emoji: "📋", label: "Routines", value: `${(data.routines||[]).length} routine${(data.routines||[]).length !== 1 ? "s" : ""}`, color: "#7C3AED" },
+    { key: "exercises", emoji: "🧘", label: "Éveil", value: (() => { const t = todayStr(); const checks = data.exercises?.[t] || {}; return `${Object.keys(checks).length} faits`; })(), color: "#A78BFA" },
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
 
@@ -2038,6 +2041,121 @@ const SetupScreen = ({ onComplete }) => {
   );
 };
 
+// ─── SECTION: Exercices / Éveil ───
+const DEFAULT_EXERCISES = {
+  0:  ["Peau à peau","Tummy time (1-2min)","Suivi visuel doigt","Musique douce","Massage bébé","Parler/chanter"],
+  1:  ["Tummy time (3-5min)","Mobile au-dessus","Hochet sonore","Noir & blanc contrastes","Berceuse","Gym douce bras/jambes"],
+  2:  ["Tummy time (5-10min)","Attraper un jouet","Miroir devant bébé","Lecture d'images","Jeu de coucou","Toucher textures"],
+  3:  ["Tummy time (10min)","Rouler sur le côté","Jouet sonore chercher","Bulle de savon","Chanson avec gestes","Portique d'éveil"],
+  4:  ["Tummy time (15min)","Assis soutenu","Jouet main à main","Livre tissu","Jeu de pieds","Musique variée"],
+  5:  ["Position assise aidée","Attraper petits objets","Jeu du miroir","Boîte à trésors textures","Comptines gestuelles","Rouler ventre-dos"],
+  6:  ["4 pattes encourager","Tour de cubes","Jeu cache-cache objet","Lecture interactive","Boire au gobelet","Pataugeoire/eau"],
+  7:  ["Ramper/4 pattes","Empiler 2 cubes","Coucou-caché avancé","Instruments musique","Nommer objets","Boîte à formes"],
+  8:  ["Cabotage meubles","Pincer petits objets","Pointer images livre","Jouer avec balle","Danser avec musique","Jeu d'imitation"],
+  9:  ["Debout appui","Jeu contenant/contenu","Téléphone jouet","Puzzle 2 pièces","Gribouillage","Marche avec aide"],
+  10: ["Premiers pas aidés","Empiler 3+ cubes","Nommer parties corps","Jeu de balle","Enfiler gros anneaux","Lecture quotidienne"],
+  11: ["Marche tenue 1 main","Crayons cire gros","Jeu symbolique (poupée)","Escaliers à 4 pattes","Chansons actions","Jeu sable/eau"],
+  12: ["Marche libre","Jeu encastrement","Gribouillage libre","Ballon taper pied","Jeu construction","Danse libre"],
+};
+
+const ExercisesSection = ({ data, update }) => {
+  const { theme } = useTheme();
+  const [addModal, setAddModal] = useState(false);
+  const [customName, setCustomName] = useState("");
+
+  const birthDate = data.baby?.birthDate;
+  const ageMonths = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (30.44 * 86400000)) : 0;
+
+  const bucketKeys = Object.keys(DEFAULT_EXERCISES).map(Number).sort((a, b) => a - b);
+  const bucket = bucketKeys.filter(k => k <= Math.max(0, ageMonths)).pop() ?? 0;
+
+  const predefined = DEFAULT_EXERCISES[bucket] || [];
+  const custom = Array.isArray(data.customExercises?.[bucket]) ? data.customExercises[bucket] : [];
+  const allExercises = [...predefined, ...custom];
+
+  const today = todayStr();
+  const todayChecks = data.exercises?.[today] || {};
+  const done = allExercises.filter(e => todayChecks[e]).length;
+
+  const toggle = (name) => update(d => {
+    if (!d.exercises) d.exercises = {};
+    if (!d.exercises[today]) d.exercises[today] = {};
+    if (d.exercises[today][name]) delete d.exercises[today][name];
+    else d.exercises[today][name] = true;
+  });
+
+  const addCustom = () => {
+    const name = customName.trim();
+    if (!name) return;
+    update(d => {
+      if (!d.customExercises) d.customExercises = {};
+      if (!Array.isArray(d.customExercises[bucket])) d.customExercises[bucket] = [];
+      if (!d.customExercises[bucket].includes(name)) d.customExercises[bucket].push(name);
+    });
+    setCustomName(""); setAddModal(false);
+  };
+
+  const deleteCustom = (name) => update(d => {
+    if (Array.isArray(d.customExercises?.[bucket]))
+      d.customExercises[bucket] = d.customExercises[bucket].filter(e => e !== name);
+    if (d.exercises?.[today]?.[name]) delete d.exercises[today][name];
+  });
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>🧘 Éveil & Exercices</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>
+            {birthDate ? `${ageMonths} mois · Exercices ${bucket} mois` : "Date de naissance non définie"}
+          </div>
+        </div>
+        <Btn onClick={() => setAddModal(true)} small>+ Perso</Btn>
+      </div>
+
+      {/* Progression du jour */}
+      <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 8 }}>{done}/{allExercises.length} faits aujourd'hui</div>
+      <div style={{ background: theme.subtle, borderRadius: 10, height: 8, marginBottom: 20, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${allExercises.length ? (done / allExercises.length) * 100 : 0}%`, background: "linear-gradient(90deg, #A78BFA, #818CF8)", borderRadius: 10, transition: "width .4s" }} />
+      </div>
+
+      {/* Grille */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {predefined.map(name => {
+          const checked = !!todayChecks[name];
+          return (
+            <div key={name} onClick={() => toggle(name)} style={{ padding: "12px 13px", borderRadius: 14, cursor: "pointer", background: checked ? "#EDE9FE" : theme.card, border: `2px solid ${checked ? "#A78BFA" : theme.border}`, transition: "all .2s" }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text }}>{checked ? "✓ " : ""}{name}</div>
+            </div>
+          );
+        })}
+        {custom.map(name => {
+          const checked = !!todayChecks[name];
+          return (
+            <div key={name} style={{ padding: "12px 13px", borderRadius: 14, background: checked ? "#EDE9FE" : theme.card, border: `2px dashed ${checked ? "#A78BFA" : "#C4B5FD"}`, transition: "all .2s", position: "relative" }}>
+              <div onClick={() => toggle(name)} style={{ fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text, cursor: "pointer", paddingRight: 18 }}>
+                {checked ? "✓ " : ""}{name}
+                <span style={{ marginLeft: 5, fontSize: 10, color: "#A78BFA", fontWeight: 800 }}>✎</span>
+              </div>
+              <span onClick={() => deleteCustom(name)} style={{ position: "absolute", top: 7, right: 8, fontSize: 12, color: theme.textMuted, cursor: "pointer" }}>✕</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {allExercises.length === 0 && <EmptyState emoji="🧘" text="Aucun exercice défini pour cet âge" />}
+
+      <Modal open={addModal} onClose={() => setAddModal(false)} title="Ajouter un exercice">
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          Tranche d'âge : <span style={{ color: "#A78BFA" }}>{bucket} mois</span>
+        </div>
+        <Input label="Nom de l'exercice" value={customName} onChange={e => setCustomName(e.target.value)} placeholder="Ex: Jeu d'eau" autoFocus />
+        <Btn onClick={addCustom} disabled={!customName.trim()} full>Ajouter</Btn>
+      </Modal>
+    </div>
+  );
+};
+
 // Assure que toutes les clés attendues existent (Firebase peut omettre les tableaux vides)
 const sanitize = (val) => {
   const def = defaultState();
@@ -2045,7 +2163,7 @@ const sanitize = (val) => {
   ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
-  ["foods","teeth","vaccines","milestonesChecked","customFoods"].forEach(k => {
+  ["foods","teeth","vaccines","milestonesChecked","customFoods","exercises","customExercises"].forEach(k => {
     if (!merged[k] || typeof merged[k] !== "object" || Array.isArray(merged[k])) merged[k] = {};
   });
   // Garantit que chaque catégorie customFoods est un tableau
@@ -2376,6 +2494,7 @@ export default function App() {
     baths: <BathsSection data={data} update={update} />,
     notes: <NotesSection data={data} update={update} />,
     routines: <RoutinesSection data={data} update={update} />,
+    exercises: <ExercisesSection data={data} update={update} />,
     pdf: <PdfSection data={data} />,
   };
 
