@@ -675,6 +675,7 @@ const BottlesSection = ({ data, update }) => {
 
 // ─── SECTION: Diapers ───
 const DiapersSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [modalType, setModalType] = useState("pipi");
   const [time, setTime] = useState(nowStr());
@@ -684,12 +685,19 @@ const DiapersSection = ({ data, update }) => {
   const [consistency, setConsistency] = useState(null);
   const [color, setColor] = useState(null);
   const [sleepWarn, setSleepWarn] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteVal, setEditingNoteVal] = useState("");
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
   const triggerSleepWarn = () => {
     if ((data.sleep||[]).find(s => !s.end)) { setSleepWarn(true); setTimeout(() => setSleepWarn(false), 10000); }
   };
 
-  const TYPE_EMOJIS = { pipi: "💦", caca: "💩", mixte: "🧷" };
+  const saveNote = (id, val) => {
+    update(d => { const e = d.diapers.find(x => x.id === id); if (e) e.note = val.trim(); });
+    setEditingNoteId(null);
+  };
+
+  const TYPE_EMOJIS = { pipi: "💦", caca: "💩", mixte: "💩💧" };
   const TYPE_LABELS = { pipi: "Pipi", caca: "Caca", mixte: "Mixte" };
 
   const resetFunnel = () => { setSelectedType(null); setQuantity(null); setConsistency(null); setColor(null); };
@@ -832,13 +840,34 @@ const DiapersSection = ({ data, update }) => {
       )}
       {todayD.length === 0 && <EmptyState emoji="🧷" text={`Aucune couche — ${dateLabel}`} />}
       {todayD.map(d => (
-        <Card key={d.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{diapersLabel(d)}</div>
-            <div style={{ fontSize: 12, color: "#9CA3AF" }}>{fmtTime(d.time)}{d.note ? ` · ${d.note}` : ""}</div>
+        <Card key={d.id} style={{ marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{diapersLabel(d)}</div>
+              <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(d.time)}</div>
+            </div>
+            <IconBtn onClick={() => remove(d.id)}>🗑</IconBtn>
           </div>
-          <IconBtn onClick={() => remove(d.id)}>🗑</IconBtn>
+          {/* Note inline */}
+          {editingNoteId === d.id ? (
+            <input
+              autoFocus
+              value={editingNoteVal}
+              onChange={e => setEditingNoteVal(e.target.value)}
+              onBlur={() => saveNote(d.id, editingNoteVal)}
+              onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingNoteId(null); }}
+              placeholder="Note..."
+              style={{ display: "block", width: "100%", marginTop: 6, fontSize: 12, border: "none", borderBottom: `1.5px solid #A78BFA`, outline: "none", background: "transparent", color: theme.text, padding: "2px 0", boxSizing: "border-box", fontFamily: "inherit" }}
+            />
+          ) : (
+            <div
+              onClick={() => { setEditingNoteId(d.id); setEditingNoteVal(d.note || ""); }}
+              style={{ marginTop: 5, fontSize: 11, color: theme.textMuted, fontStyle: "italic", cursor: "pointer" }}
+            >
+              {d.note || "Ajouter une note..."}
+            </div>
+          )}
         </Card>
       ))}
 
