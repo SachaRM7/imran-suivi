@@ -592,41 +592,108 @@ const DayNav = ({ dateLabel, dayOffset, goToday, prev, next }) => {
 };
 
 // ─── SECTION: Bottles ───
+const BOTTLE_CONTENTS = [
+  { key: "lait",     label: "Lait",     emoji: "🥛" },
+  { key: "eau",      label: "Eau",      emoji: "💧" },
+  { key: "cereales", label: "Céréales", emoji: "🥣" },
+  { key: "lait+eau", label: "Lait+Eau", emoji: "🥛💧" },
+];
+
 const BottlesSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [amount, setAmount] = useState("");
   const [time, setTime] = useState(nowStr());
   const [note, setNote] = useState("");
+  const [modalContent, setModalContent] = useState("lait");
+  const [pendingMl, setPendingMl] = useState(null);
   const [sleepWarn, setSleepWarn] = useState(false);
+  const contentTimer = useRef(null);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
+
   const triggerSleepWarn = () => {
     if ((data.sleep||[]).find(s => !s.end)) { setSleepWarn(true); setTimeout(() => setSleepWarn(false), 10000); }
   };
-  const quickAdd = (ml) => { update(d => { d.bottles.push({ id: uid(), amount: ml, time: nowStr(), note: "" }); }); triggerSleepWarn(); };
-  const add = () => { if (!(Number(amount) > 0)) return; update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note }); }); setModal(false); setAmount(""); setNote(""); triggerSleepWarn(); };
+
+  const saveBottle = (ml, content) => {
+    update(d => { d.bottles.push({ id: uid(), amount: ml, time: nowStr(), note: "", content }); });
+    setPendingMl(null);
+    clearTimeout(contentTimer.current);
+    triggerSleepWarn();
+  };
+
+  const handleQuickMl = (ml) => {
+    clearTimeout(contentTimer.current);
+    setPendingMl(ml);
+    contentTimer.current = setTimeout(() => saveBottle(ml, "lait"), 5000);
+  };
+
+  const confirmContent = (contentKey) => {
+    if (pendingMl) saveBottle(pendingMl, contentKey);
+  };
+
+  const add = () => {
+    if (!(Number(amount) > 0)) return;
+    update(d => { d.bottles.push({ id: uid(), amount: Number(amount), time, note, content: modalContent }); });
+    setModal(false); setAmount(""); setNote(""); setModalContent("lait");
+    triggerSleepWarn();
+  };
+
   const remove = (id) => update(d => { d.bottles = d.bottles.filter(b => b.id !== id); });
   const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
   const olderB = (data.bottles||[]).filter(b => !b.time?.startsWith(todayStr())).sort((a, b) => b.time.localeCompare(a.time));
   const totalMl = dayB.reduce((s, b) => s + (b.amount || 0), 0);
 
+  const contentTag = (b) => {
+    if (!b.content) return "";
+    const c = BOTTLE_CONTENTS.find(x => x.key === b.content);
+    return c ? ` · ${c.emoji} ${c.label}` : "";
+  };
+
   return (
     <div ref={containerRef}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>🍼 Biberons</div>
-          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{dayB.length} biberon{dayB.length > 1 ? "s" : ""} — {totalMl} ml</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>🍼 Biberons</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{dayB.length} biberon{dayB.length > 1 ? "s" : ""} — {totalMl} ml</div>
         </div>
-        <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Détail</Btn>
+        <Btn onClick={() => { setTime(nowStr()); setModalContent("lait"); setModal(true); }} small>+ Détail</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
 
       {dayOffset === 0 && (
-        <div style={{ display: "flex", gap: 7, marginBottom: 18, flexWrap: "wrap" }}>
-          {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
-            <Btn key={ml} variant="secondary" small onClick={() => quickAdd(ml)}>{ml}ml</Btn>
-          ))}
-        </div>
+        <>
+          <div style={{ display: "flex", gap: 7, marginBottom: pendingMl ? 10 : 18, flexWrap: "wrap" }}>
+            {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
+              <Btn key={ml} variant={pendingMl === ml ? "primary" : "secondary"} small onClick={() => handleQuickMl(ml)}>{ml}ml</Btn>
+            ))}
+          </div>
+          {/* Sélecteur contenu (entonnoir) */}
+          <div style={{ overflow: "hidden", maxHeight: pendingMl ? 110 : 0, opacity: pendingMl ? 1 : 0, transition: "max-height .3s ease, opacity .25s ease", marginBottom: pendingMl ? 18 : 0 }}>
+            <div style={{ background: theme.subtle, borderRadius: 14, padding: "12px 12px 14px", border: `1.5px solid ${theme.border}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, marginBottom: 9, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {pendingMl} ml — Contenu ?{" "}
+                <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, opacity: 0.7 }}>Lait auto dans 5 s</span>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {BOTTLE_CONTENTS.map(c => (
+                  <button key={c.key} onClick={() => confirmContent(c.key)} style={{
+                    flex: 1, padding: "10px 4px", borderRadius: 10,
+                    border: `2px solid ${theme.border}`, background: theme.card,
+                    cursor: "pointer", fontWeight: 700, fontSize: 11, color: theme.text,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 3, transition: "all .15s"
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#818CF8"; e.currentTarget.style.background = "#EEF2FF"; e.currentTarget.style.color = "#4338CA"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.background = theme.card; e.currentTarget.style.color = theme.text; }}>
+                    <span style={{ fontSize: 20 }}>{c.emoji}</span>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {sleepWarn && (
@@ -643,8 +710,8 @@ const BottlesSection = ({ data, update }) => {
         <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>{b.amount} ml</div>
-            <div style={{ fontSize: 12, color: "#9CA3AF" }}>{fmtTime(b.time)}{b.note ? ` · ${b.note}` : ""}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{b.amount} ml{contentTag(b)}</div>
+            <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(b.time)}{b.note ? ` · ${b.note}` : ""}</div>
           </div>
           <IconBtn onClick={() => remove(b.id)}>🗑</IconBtn>
         </Card>
@@ -652,11 +719,11 @@ const BottlesSection = ({ data, update }) => {
 
       {dayOffset === 0 && olderB.length > 0 && (
         <details style={{ marginTop: 14 }}>
-          <summary style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", cursor: "pointer", padding: "8px 0" }}>Historique ({olderB.length})</summary>
+          <summary style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted, cursor: "pointer", padding: "8px 0" }}>Historique ({olderB.length})</summary>
           {olderB.slice(0, 50).map(b => (
-            <div key={b.id} style={{ display: "flex", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #F3F4F6", fontSize: 13 }}>
-              <span style={{ flex: 1, fontWeight: 700 }}>{b.amount} ml</span>
-              <span style={{ color: "#9CA3AF" }}>{fmt(b.time)} {fmtTime(b.time)}</span>
+            <div key={b.id} style={{ display: "flex", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${theme.border}`, fontSize: 13 }}>
+              <span style={{ flex: 1, fontWeight: 700, color: theme.text }}>{b.amount} ml{contentTag(b)}</span>
+              <span style={{ color: theme.textMuted }}>{fmt(b.time)} {fmtTime(b.time)}</span>
               <IconBtn onClick={() => remove(b.id)}>🗑</IconBtn>
             </div>
           ))}
@@ -665,6 +732,14 @@ const BottlesSection = ({ data, update }) => {
 
       <Modal open={modal} onClose={() => setModal(false)} title="Ajouter un biberon">
         <Input label="Quantité (ml)" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="120" />
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Contenu</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {BOTTLE_CONTENTS.map(c => (
+              <Chip key={c.key} active={modalContent === c.key} onClick={() => setModalContent(c.key)} color="#818CF8">{c.emoji} {c.label}</Chip>
+            ))}
+          </div>
+        </div>
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Note (optionnel)" value={note} onChange={e => setNote(e.target.value)} placeholder="Refusé après 60ml..." />
         <Btn onClick={add} full style={{ marginTop: 4 }}>Enregistrer</Btn>
