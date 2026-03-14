@@ -193,6 +193,7 @@ const defaultState = () => ({
   vaccines: {},
   temperature: [],
   routines: [],
+  customFoods: {},
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -931,66 +932,95 @@ const MR_CUISINE_RECIPES = [
 
 // ─── SECTION: Food ───
 const FoodSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [view, setView] = useState("aliments");
   const [cat, setCat] = useState("Légumes");
-  const [customModal, setCustomModal] = useState(false);
+  const [addFoodCat, setAddFoodCat] = useState(null); // null = fermé, sinon = catégorie pré-sélectionnée
   const [customName, setCustomName] = useState("");
-  const [customCat, setCustomCat] = useState("Légumes");
   const [recipeModal, setRecipeModal] = useState(null);
   const [onlyCompatible, setOnlyCompatible] = useState(false);
 
   const toggle = (name) => update(d => { d.foods[name] ? delete d.foods[name] : d.foods[name] = { date: todayStr(), reaction: "ok" }; });
   const setReaction = (name, r) => update(d => { if (d.foods[name]) d.foods[name].reaction = r; });
+  const deleteCustomFood = (c, food) => update(d => {
+    if (d.customFoods?.[c]) d.customFoods[c] = d.customFoods[c].filter(f => f !== food);
+    delete d.foods[food];
+  });
+  const addCustomFood = () => {
+    const name = customName.trim();
+    if (!name || !addFoodCat) return;
+    update(d => {
+      if (!d.customFoods) d.customFoods = {};
+      if (!d.customFoods[addFoodCat]) d.customFoods[addFoodCat] = [];
+      if (!d.customFoods[addFoodCat].includes(name)) d.customFoods[addFoodCat].push(name);
+    });
+    setCustomName("");
+    setAddFoodCat(null);
+  };
+
   const tried = Object.keys(data.foods||{}).filter(k => data.foods[k]).length;
-  const total = Object.values(FOOD_CATEGORIES).flat().length;
+  const customTotal = Object.values(data.customFoods||{}).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+  const total = Object.values(FOOD_CATEGORIES).flat().length + customTotal;
 
   const validated = new Set(Object.keys(data.foods||{}).filter(k => data.foods[k]));
   const recipes = onlyCompatible
     ? MR_CUISINE_RECIPES.filter(r => r.ingredients.every(i => validated.has(i)))
     : MR_CUISINE_RECIPES;
 
+  const renderFoodItem = (food, isCustom = false) => {
+    const t = !!data.foods?.[food];
+    const r = data.foods?.[food]?.reaction;
+    const bg = t ? (r === "allergie" ? "#FEF2F2" : r === "refusé" ? "#FFFBEB" : "#F0FDF4") : theme.card;
+    const bd = t ? (r === "allergie" ? "#FECACA" : r === "refusé" ? "#FDE68A" : "#86EFAC") : isCustom ? "#C4B5FD" : theme.border;
+    return (
+      <div key={food} onClick={() => toggle(food)} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", background: bg, border: `2px ${isCustom && !t ? "dashed" : "solid"} ${bd}`, transition: "all .2s", position: "relative" }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, paddingRight: isCustom ? 18 : 0 }}>
+          {t ? "✓ " : ""}{food}
+          {isCustom && <span style={{ marginLeft: 5, fontSize: 10, color: "#A78BFA", fontWeight: 800 }}>✎</span>}
+        </div>
+        {isCustom && (
+          <span onClick={e => { e.stopPropagation(); deleteCustomFood(cat, food); }} style={{ position: "absolute", top: 7, right: 8, fontSize: 12, color: "#9CA3AF", cursor: "pointer", lineHeight: 1 }}>✕</span>
+        )}
+        {t && (
+          <div style={{ display: "flex", gap: 3, marginTop: 6 }} onClick={e => e.stopPropagation()}>
+            {[["ok","👍"],["refusé","🚫"],["allergie","⚠️"]].map(([rv, em]) => (
+              <span key={rv} onClick={() => setReaction(food, rv)} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 8, fontWeight: 700, cursor: "pointer", background: r === rv ? (rv === "allergie" ? "#EF4444" : rv === "refusé" ? "#F59E0B" : "#10B981") : theme.subtle, color: r === rv ? "#fff" : theme.textMuted }}>{em}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Mr Cuisine"}</div>
-        {view === "aliments" && <Btn onClick={() => setCustomModal(true)} small>+ Perso</Btn>}
-      </div>
+      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 14, color: theme.text }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Mr Cuisine"}</div>
 
       {/* Toggle vue */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#F3F4F6", borderRadius: 12, padding: 4 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, background: theme.subtle, borderRadius: 12, padding: 4 }}>
         {[["aliments", "🥕 Aliments"], ["cuisine", "🍳 Mr Cuisine"]].map(([v, label]) => (
-          <button key={v} onClick={() => setView(v)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: view === v ? "#fff" : "transparent", color: view === v ? "#7C3AED" : "#9CA3AF", boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
+          <button key={v} onClick={() => setView(v)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: view === v ? theme.card : "transparent", color: view === v ? "#7C3AED" : theme.textMuted, boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
         ))}
       </div>
 
       {view === "aliments" && (
         <>
-          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 14 }}>{tried}/{total} aliments goûtés</div>
-          <div style={{ background: "#F3F4F6", borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${(tried / total) * 100}%`, background: "linear-gradient(90deg, #22C55E, #10B981)", borderRadius: 10, transition: "width .4s" }} />
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 14 }}>{tried}/{total} aliments goûtés</div>
+          <div style={{ background: theme.subtle, borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${total > 0 ? (tried / total) * 100 : 0}%`, background: "linear-gradient(90deg, #22C55E, #10B981)", borderRadius: 10, transition: "width .4s" }} />
           </div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
             {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={cat === c} onClick={() => setCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {FOOD_CATEGORIES[cat].map(food => {
-              const t = !!data.foods?.[food];
-              const r = data.foods?.[food]?.reaction;
-              const bg = t ? (r === "allergie" ? "#FEF2F2" : r === "refusé" ? "#FFFBEB" : "#F0FDF4") : "#fff";
-              const bd = t ? (r === "allergie" ? "#FECACA" : r === "refusé" ? "#FDE68A" : "#86EFAC") : "#F3F4F6";
-              return (
-                <div key={food} onClick={() => toggle(food)} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", background: bg, border: `2px solid ${bd}`, transition: "all .2s" }}>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t ? "✓ " : ""}{food}</div>
-                  {t && (
-                    <div style={{ display: "flex", gap: 3, marginTop: 6 }} onClick={e => e.stopPropagation()}>
-                      {[["ok","👍"],["refusé","🚫"],["allergie","⚠️"]].map(([rv, em]) => (
-                        <span key={rv} onClick={() => setReaction(food, rv)} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 8, fontWeight: 700, cursor: "pointer", background: r === rv ? (rv === "allergie" ? "#EF4444" : rv === "refusé" ? "#F59E0B" : "#10B981") : "#F3F4F6", color: r === rv ? "#fff" : "#6B7280" }}>{em}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {FOOD_CATEGORIES[cat].map(food => renderFoodItem(food, false))}
+            {(data.customFoods?.[cat] || []).map(food => renderFoodItem(food, true))}
+            {/* Bouton + Ajouter en bas de la grille */}
+            <div onClick={() => { setAddFoodCat(cat); setCustomName(""); }} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", border: `2px dashed ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: theme.textMuted, fontWeight: 700, fontSize: 13, transition: "border-color .2s, color .2s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#A78BFA"; e.currentTarget.style.color = "#A78BFA"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.textMuted; }}>
+              + Ajouter
+            </div>
           </div>
         </>
       )}
@@ -998,8 +1028,8 @@ const FoodSection = ({ data, update }) => {
       {view === "cuisine" && (
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{validated.size} aliment{validated.size !== 1 ? "s" : ""} validé{validated.size !== 1 ? "s" : ""}</div>
-            <button onClick={() => setOnlyCompatible(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, background: onlyCompatible ? "#EDE9FE" : "#F3F4F6", border: `1.5px solid ${onlyCompatible ? "#7C3AED" : "#E5E7EB"}`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: onlyCompatible ? "#7C3AED" : "#6B7280", cursor: "pointer" }}>
+            <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{validated.size} aliment{validated.size !== 1 ? "s" : ""} validé{validated.size !== 1 ? "s" : ""}</div>
+            <button onClick={() => setOnlyCompatible(o => !o)} style={{ display: "flex", alignItems: "center", gap: 6, background: onlyCompatible ? "#EDE9FE" : theme.subtle, border: `1.5px solid ${onlyCompatible ? "#7C3AED" : theme.border}`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: onlyCompatible ? "#7C3AED" : theme.textMuted, cursor: "pointer" }}>
               ✓ Compatibles
             </button>
           </div>
@@ -1012,8 +1042,8 @@ const FoodSection = ({ data, update }) => {
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{recipe.name}</div>
-                    <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 6 }}>≥ {recipe.ageMin} mois · {recipe.ingredients.join(", ")}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, color: theme.text }}>{recipe.name}</div>
+                    <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>≥ {recipe.ageMin} mois · {recipe.ingredients.join(", ")}</div>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
                       {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.join(", ")}`}
                     </span>
@@ -1025,12 +1055,13 @@ const FoodSection = ({ data, update }) => {
         </>
       )}
 
-      <Modal open={customModal} onClose={() => setCustomModal(false)} title="Ajouter un aliment perso">
-        <Input label="Nom" value={customName} onChange={e => setCustomName(e.target.value)} placeholder="Ex: Patisson" />
-        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-          {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={customCat === c} onClick={() => setCustomCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
+      {/* Modal ajout aliment custom */}
+      <Modal open={!!addFoodCat} onClose={() => setAddFoodCat(null)} title="Ajouter un aliment">
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          Catégorie : <span style={{ color: CAT_COLORS[addFoodCat] || "#7C3AED" }}>{addFoodCat}</span>
         </div>
-        <Btn onClick={() => { if (customName.trim()) { update(d => { d.foods[customName.trim()] = { date: todayStr(), reaction: "ok", custom: true }; }); setCustomModal(false); setCustomName(""); } }} full>Ajouter</Btn>
+        <Input label="Nom de l'aliment" value={customName} onChange={e => setCustomName(e.target.value)} placeholder="Ex: Butternut" autoFocus />
+        <Btn onClick={addCustomFood} disabled={!customName.trim()} full>Ajouter</Btn>
       </Modal>
 
       <Modal open={!!recipeModal} onClose={() => setRecipeModal(null)} title={recipeModal ? `${recipeModal.emoji} ${recipeModal.name}` : ""}>
@@ -1825,8 +1856,12 @@ const sanitize = (val) => {
   ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
-  ["foods","teeth","vaccines","milestonesChecked"].forEach(k => {
+  ["foods","teeth","vaccines","milestonesChecked","customFoods"].forEach(k => {
     if (!merged[k] || typeof merged[k] !== "object" || Array.isArray(merged[k])) merged[k] = {};
+  });
+  // Garantit que chaque catégorie customFoods est un tableau
+  Object.keys(merged.customFoods).forEach(cat => {
+    if (!Array.isArray(merged.customFoods[cat])) merged.customFoods[cat] = [];
   });
   // Normalise chaque routine : garantit que items est un tableau
   merged.routines = merged.routines.map(r => ({
