@@ -609,6 +609,8 @@ const BottlesSection = ({ data, update }) => {
   const [pendingMl, setPendingMl] = useState(null);
   const [sleepWarn, setSleepWarn] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteVal, setEditingNoteVal] = useState("");
   const contentTimer = useRef(null);
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
 
@@ -636,6 +638,11 @@ const BottlesSection = ({ data, update }) => {
   const openEdit = (b) => {
     setEditId(b.id); setAmount(String(b.amount)); setTime(b.time);
     setNote(b.note || ""); setModalContent(b.content || "lait"); setModal(true);
+  };
+
+  const saveBottleNote = (id, val) => {
+    update(d => { const b = d.bottles.find(x => x.id === id); if (b) b.note = val.trim(); });
+    setEditingNoteId(null);
   };
 
   const add = () => {
@@ -716,14 +723,30 @@ const BottlesSection = ({ data, update }) => {
       )}
       {dayB.length === 0 && <EmptyState emoji="🍼" text={`Aucun biberon — ${dateLabel}`} />}
       {dayB.map(b => (
-        <Card key={b.id} onClick={() => openEdit(b)} style={{ display: "flex", alignItems: "center", marginBottom: 8, cursor: "pointer", position: "relative" }}>
-          <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{b.amount} ml{contentTag(b)}</div>
-            <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(b.time)}{b.note ? ` · ${b.note}` : ""}</div>
+        <Card key={b.id} onClick={() => openEdit(b)} style={{ marginBottom: 8, cursor: "pointer" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{b.amount} ml{contentTag(b)}</div>
+              <div style={{ fontSize: 12, color: theme.textMuted }}>{fmtTime(b.time)}</div>
+            </div>
+            <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
+            <span onClick={e => { e.stopPropagation(); remove(b.id); }}><IconBtn>🗑</IconBtn></span>
           </div>
-          <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
-          <span onClick={e => { e.stopPropagation(); remove(b.id); }}><IconBtn>🗑</IconBtn></span>
+          {editingNoteId === b.id ? (
+            <input autoFocus value={editingNoteVal}
+              onChange={e => setEditingNoteVal(e.target.value)}
+              onBlur={() => saveBottleNote(b.id, editingNoteVal)}
+              onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingNoteId(null); }}
+              onClick={e => e.stopPropagation()}
+              placeholder="Note..."
+              style={{ display: "block", width: "100%", marginTop: 6, fontSize: 12, border: "none", borderBottom: `1.5px solid #A78BFA`, outline: "none", background: "transparent", color: theme.text, padding: "2px 0", boxSizing: "border-box", fontFamily: "inherit" }} />
+          ) : (
+            <div onClick={e => { e.stopPropagation(); setEditingNoteId(b.id); setEditingNoteVal(b.note || ""); }}
+              style={{ marginTop: 5, fontSize: 11, color: theme.textMuted, fontStyle: "italic", cursor: "text" }}>
+              {b.note || "Ajouter une note..."}
+            </div>
+          )}
         </Card>
       ))}
 
@@ -975,18 +998,26 @@ const SleepSection = ({ data, update }) => {
   const [start, setStart] = useState(nowStr());
   const [end, setEnd] = useState("");
   const [type, setType] = useState("sieste");
+  const [note, setNote] = useState("");
   const [editId, setEditId] = useState(null);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteVal, setEditingNoteVal] = useState("");
   const { dayOffset, dateStr, dateLabel, containerRef, goToday, prev, next } = useSwipeDay();
 
-  const openEdit = (s) => { setEditId(s.id); setStart(s.start); setEnd(s.end || ""); setType(s.type || "sieste"); setModal(true); };
+  const openEdit = (s) => { setEditId(s.id); setStart(s.start); setEnd(s.end || ""); setType(s.type || "sieste"); setNote(s.note || ""); setModal(true); };
 
   const add = () => {
     if (editId) {
-      update(d => { const s = d.sleep.find(x => x.id === editId); if (s) { s.start = start; s.end = end || null; s.type = type; } });
+      update(d => { const s = d.sleep.find(x => x.id === editId); if (s) { s.start = start; s.end = end || null; s.type = type; s.note = note; } });
     } else {
-      update(d => { d.sleep.push({ id: uid(), start, end: end || null, type }); });
+      update(d => { d.sleep.push({ id: uid(), start, end: end || null, type, note }); });
     }
-    setModal(false); setEditId(null);
+    setModal(false); setNote(""); setEditId(null);
+  };
+
+  const saveSleepNote = (id, val) => {
+    update(d => { const s = d.sleep.find(x => x.id === id); if (s) s.note = val.trim(); });
+    setEditingNoteId(null);
   };
 
   const remove = (id) => update(d => { d.sleep = d.sleep.filter(x => x.id !== id); });
@@ -1015,14 +1046,30 @@ const SleepSection = ({ data, update }) => {
 
       {dayItems.length === 0 && <EmptyState emoji="😴" text={`Aucune sieste — ${dateLabel}`} />}
       {dayItems.map(s => (
-        <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ display: "flex", alignItems: "center", marginBottom: 8, cursor: "pointer" }}>
-          <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? "💤" : s.type === "nuit" ? "🌙" : "😴"}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
-            <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
+        <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ marginBottom: 8, cursor: "pointer" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? "💤" : s.type === "nuit" ? "🌙" : "😴"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
+              <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
+            </div>
+            <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
+            <span onClick={e => { e.stopPropagation(); remove(s.id); }}><IconBtn>🗑</IconBtn></span>
           </div>
-          <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
-          <span onClick={e => { e.stopPropagation(); remove(s.id); }}><IconBtn>🗑</IconBtn></span>
+          {editingNoteId === s.id ? (
+            <input autoFocus value={editingNoteVal}
+              onChange={e => setEditingNoteVal(e.target.value)}
+              onBlur={() => saveSleepNote(s.id, editingNoteVal)}
+              onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingNoteId(null); }}
+              onClick={e => e.stopPropagation()}
+              placeholder="Note..."
+              style={{ display: "block", width: "100%", marginTop: 6, fontSize: 12, border: "none", borderBottom: `1.5px solid #A78BFA`, outline: "none", background: "transparent", color: theme.text, padding: "2px 0", boxSizing: "border-box", fontFamily: "inherit" }} />
+          ) : (
+            <div onClick={e => { e.stopPropagation(); setEditingNoteId(s.id); setEditingNoteVal(s.note || ""); }}
+              style={{ marginTop: 5, fontSize: 11, color: theme.textMuted, fontStyle: "italic", cursor: "text" }}>
+              {s.note || "Ajouter une note..."}
+            </div>
+          )}
         </Card>
       ))}
 
@@ -1032,6 +1079,7 @@ const SleepSection = ({ data, update }) => {
         </div>
         <Input label="Début" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} />
         <Input label="Fin (vide = en cours)" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} />
+        <Input label="Note (optionnel)" value={note} onChange={e => setNote(e.target.value)} placeholder="Agité, dents..." />
         <Btn onClick={add} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
     </div>
