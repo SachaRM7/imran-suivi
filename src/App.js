@@ -7,11 +7,13 @@ const THEMES = {
     bg: "#FAFAF9", card: "#fff", border: "#F3F4F6", text: "#1F2937",
     textMuted: "#9CA3AF", subtle: "#F9FAFB", input: "#fff", inputBorder: "#E5E7EB",
     navBg: "#fff", navBorder: "#F3F4F6", dayNavBg: "#F3F4F6", headerBg: "#FAFAF9",
+    accentGrad: "linear-gradient(135deg, #7C3AED, #6366F1)",
   },
   dark: {
     bg: "#0F0F14", card: "#1A1A24", border: "#2D2D3A", text: "#F1F0F5",
     textMuted: "#6B7280", subtle: "#1F1F2E", input: "#1F1F2E", inputBorder: "#3D3D50",
     navBg: "#1A1A24", navBorder: "#2D2D3A", dayNavBg: "#1F1F2E", headerBg: "#0F0F14",
+    accentGrad: "linear-gradient(135deg, #7C3AED, #6366F1)",
   },
 };
 const ThemeContext = createContext({ theme: THEMES.light, darkMode: false, toggleDark: () => {} });
@@ -2378,11 +2380,11 @@ export default function App() {
   };
 
   const navItems = [
-    { key: "bottles", emoji: "🍼", label: "Biberons" },
-    { key: "food", emoji: "🥕", label: "Aliments" },
-    { key: "home", emoji: "🏠", label: null },
-    { key: "milestones", emoji: "🏆", label: "Étapes" },
-    { key: "notes", emoji: "📝", label: "Journal" },
+    { key: "bottles", emoji: "🍼", label: "Biberon" },
+    { key: "diapers", emoji: "🧷", label: "Couche" },
+    { key: "home",    emoji: "🏠", label: "Home", isCenter: true },
+    { key: "sleep",   emoji: "😴", label: "Sommeil" },
+    { key: "routines",emoji: "📋", label: "Routine" },
   ];
 
   return (
@@ -2404,16 +2406,17 @@ export default function App() {
         {/* Bottom nav */}
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: theme.navBg, borderTop: `1.5px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "8px 0 20px", zIndex: 200, transition: "background .2s" }}>
           {navItems.map(n => {
-            if (n.key === "home") return (
-              <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -15 }}>
-                <div style={{ width: 54, height: 54, borderRadius: "50%", background: "linear-gradient(135deg, #7C3AED, #6366F1)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(124,58,237,0.45)", transition: "transform .15s", transform: section === "home" ? "scale(1.08)" : "scale(1)" }}>
-                  <span style={{ fontSize: 24 }}>🏠</span>
+            if (n.isCenter) return (
+              <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -16 }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", background: theme.accentGrad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(129,140,248,.4)", transition: "transform .15s", transform: section === "home" ? "scale(1.08)" : "scale(1)" }}>
+                  <span style={{ fontSize: 22 }}>🏠</span>
                 </div>
               </div>
             );
+            const active = section === n.key;
             return (
-              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, cursor: "pointer", color: section === n.key ? "#7C3AED" : theme.textMuted, transition: "color .2s", padding: "4px 8px" }}>
-                <span style={{ fontSize: 20, transition: "transform .15s", transform: section === n.key ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
+              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: active ? "#7C3AED" : theme.textMuted, transition: "color .2s", padding: "4px 8px", minWidth: 44 }}>
+                <span style={{ fontSize: 20, transition: "transform .15s", transform: active ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
                 <span style={{ fontSize: 10, fontWeight: 800 }}>{n.label}</span>
               </div>
             );
