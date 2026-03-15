@@ -2921,25 +2921,117 @@ const BooksSection = ({ data, update }) => {
 
 // ─── SECTION: Exercices / Éveil ───
 const DEFAULT_EXERCISES = {
-  0:  ["Peau à peau","Tummy time (1-2min)","Suivi visuel doigt","Musique douce","Massage bébé","Parler/chanter"],
-  1:  ["Tummy time (3-5min)","Mobile au-dessus","Hochet sonore","Noir & blanc contrastes","Berceuse","Gym douce bras/jambes"],
-  2:  ["Tummy time (5-10min)","Attraper un jouet","Miroir devant bébé","Lecture d'images","Jeu de coucou","Toucher textures"],
-  3:  ["Tummy time (10min)","Rouler sur le côté","Jouet sonore chercher","Bulle de savon","Chanson avec gestes","Portique d'éveil"],
-  4:  ["Tummy time (15min)","Assis soutenu","Jouet main à main","Livre tissu","Jeu de pieds","Musique variée"],
-  5:  ["Position assise aidée","Attraper petits objets","Jeu du miroir","Boîte à trésors textures","Comptines gestuelles","Rouler ventre-dos"],
-  6:  ["4 pattes encourager","Tour de cubes","Jeu cache-cache objet","Lecture interactive","Boire au gobelet","Pataugeoire/eau"],
-  7:  ["Ramper/4 pattes","Empiler 2 cubes","Coucou-caché avancé","Instruments musique","Nommer objets","Boîte à formes"],
-  8:  ["Cabotage meubles","Pincer petits objets","Pointer images livre","Jouer avec balle","Danser avec musique","Jeu d'imitation"],
-  9:  ["Debout appui","Jeu contenant/contenu","Téléphone jouet","Puzzle 2 pièces","Gribouillage","Marche avec aide"],
-  10: ["Premiers pas aidés","Empiler 3+ cubes","Nommer parties corps","Jeu de balle","Enfiler gros anneaux","Lecture quotidienne"],
-  11: ["Marche tenue 1 main","Crayons cire gros","Jeu symbolique (poupée)","Escaliers à 4 pattes","Chansons actions","Jeu sable/eau"],
-  12: ["Marche libre","Jeu encastrement","Gribouillage libre","Ballon taper pied","Jeu construction","Danse libre"],
+  0: [
+    { label: "Peau à peau", tip: "Posez bébé torse nu contre votre peau. 20-30min idéal. Régule sa température, son rythme cardiaque et renforce le lien." },
+    { label: "Tummy time (1-2min)", tip: "Sur une surface ferme, bébé sur le ventre. Restez face à lui pour l'encourager. Renforce le cou et prépare le retournement." },
+    { label: "Suivi visuel doigt", tip: "Déplacez lentement votre doigt à 30cm de ses yeux, de gauche à droite. Stimule la coordination oculaire dès les premiers jours." },
+    { label: "Musique douce", tip: "Chantez ou mettez de la musique calme. Le son de votre voix est le plus stimulant pour lui à cet âge." },
+    { label: "Massage bébé", tip: "Avec une huile neutre, massez doucement bras, jambes, ventre (dans le sens des aiguilles d'une montre). Apaise et aide la digestion." },
+    { label: "Parler/chanter", tip: "Racontez ce que vous faites : le bain, le change, la cuisine. Il absorbe les intonations et le rythme du langage." },
+  ],
+  1: [
+    { label: "Tummy time (3-5min)", tip: "Augmentez progressivement la durée. Placez un miroir ou un jouet devant lui pour motiver l'effort de tête." },
+    { label: "Mobile au-dessus", tip: "Suspendez un mobile contrasté (noir/blanc/rouge) à 30-40cm. Il l'observe quelques minutes par session." },
+    { label: "Hochet sonore", tip: "Secouez doucement un hochet de chaque côté de sa tête. Il va tourner les yeux puis la tête vers le son." },
+    { label: "Noir & blanc contrastes", tip: "Montrez des flashcards ou livres noir/blanc. La vision des contrastes est optimale avant 3 mois." },
+    { label: "Berceuse", tip: "Répétez les mêmes chansons : la mémorisation des mélodies familières débute très tôt." },
+    { label: "Gym douce bras/jambes", tip: "Allongé sur le dos, bougez doucement ses bras et jambes en alternance, comme s'il pédalait. Stimule la conscience corporelle." },
+  ],
+  2: [
+    { label: "Tummy time (5-10min)", tip: "À 2 mois, bébé commence à lever la tête à 45°. Encouragez avec votre voix placée devant lui." },
+    { label: "Attraper un jouet", tip: "Suspendez un jouet léger à portée de sa main. Il va tenter de l'attraper — motricité volontaire qui débute." },
+    { label: "Miroir devant bébé", tip: "Les bébés adorent les miroirs. Placez-en un pendant le tummy time. Stimule la curiosité et l'attention." },
+    { label: "Lecture d'images", tip: "Lisez à voix haute en montrant les images du doigt. Le rythme de votre voix associé aux images construit le langage." },
+    { label: "Jeu de coucou", tip: "Cachez votre visage derrière vos mains, puis réapparaissez avec un sourire. Il commence à anticiper la réapparition." },
+    { label: "Toucher textures", tip: "Faites toucher des surfaces douces, rugueuses, lisses. Chaque texture active de nouvelles connexions sensorielles." },
+  ],
+  3: [
+    { label: "Tummy time (10min)", tip: "À 3 mois, visez 10min d'affilée. Bébé devrait lever la tête à 90° et s'appuyer sur les avant-bras." },
+    { label: "Rouler sur le côté", tip: "Allongé sur le dos, guidez doucement ses jambes d'un côté pour initier le roulement. Prépare le retournement." },
+    { label: "Jouet sonore chercher", tip: "Faites sonner un hochet hors de son champ visuel. Il va tourner la tête pour localiser le son." },
+    { label: "Bulle de savon", tip: "Soufflez des bulles devant lui. Il les suit des yeux — excellent pour le tracking visuel et la surprise." },
+    { label: "Chanson avec gestes", tip: "Les comptines avec gestes (Promenons-nous dans les bois...) associent son, rythme et mouvement." },
+    { label: "Portique d'éveil", tip: "Placez bébé sous un portique avec jouets suspendus. Il va tenter de les frapper avec les bras et les jambes." },
+  ],
+  4: [
+    { label: "Tummy time (15min)", tip: "Objectif : 15min par session. Il commence à se redresser sur les mains. Signe que les épaules et le dos renforcent." },
+    { label: "Assis soutenu", tip: "Installez bébé assis en le soutenant dans le dos. Quelques minutes. Nouveau point de vue = nouvelle stimulation." },
+    { label: "Jouet main à main", tip: "Donnez un jouet léger dans une main. Il va le passer dans l'autre — transfert bimanuel, étape clé du développement." },
+    { label: "Livre tissu", tip: "Les livres en tissu aux textures variées combinent lecture, toucher et manipulation. Adaptés à la bouche aussi." },
+    { label: "Jeu de pieds", tip: "Attachez un petit grelot à sa cheville. Il découvre que ses mouvements créent du son — notion de cause à effet." },
+    { label: "Musique variée", tip: "Variez les styles : classique, jazz, world. La diversité musicale enrichit les connexions auditives." },
+  ],
+  5: [
+    { label: "Position assise aidée", tip: "Asseyez-le entre vos jambes ou avec un soutien. Il va commencer à se tenir quelques secondes seul." },
+    { label: "Attraper petits objets", tip: "Proposez des objets de taille variée. La pince grossière (toute la main) se développe, prémisse de la pince fine." },
+    { label: "Jeu du miroir", tip: "Asseyez-le devant un miroir et observez ses réactions. Il commence à interagir avec son reflet." },
+    { label: "Boîte à trésors textures", tip: "Une boîte avec objets du quotidien (brosse, tissu, cuillère en bois). Exploration sensorielle libre et sécurisée." },
+    { label: "Comptines gestuelles", tip: "Les chansons avec mouvements des mains (Bateau sur l'eau...) développent l'imitation motrice." },
+    { label: "Rouler ventre-dos", tip: "Il maîtrise bientôt le retournement complet. Encouragez avec un jouet légèrement hors de portée." },
+  ],
+  6: [
+    { label: "4 pattes encourager", tip: "Placez un jouet attractif légèrement hors de portée pour encourager les déplacements en rampant." },
+    { label: "Tour de cubes", tip: "Empilez 2 cubes devant lui et laissez-le les faire tomber. Puis montrez-lui à les empiler. Cause à effet + motricité." },
+    { label: "Jeu cache-cache objet", tip: "Cachez un jouet sous un foulard devant ses yeux. Il comprend que l'objet existe encore : permanence de l'objet." },
+    { label: "Lecture interactive", tip: "Pointez les images et nommez-les. Attendez sa réaction avant de tourner la page. Dialogue préverbal." },
+    { label: "Boire au gobelet", tip: "Proposez un gobelet à bec avec quelques ml d'eau. Stimule la coordination main-bouche et prépare la diversification." },
+    { label: "Pataugeoire/eau", tip: "Un bac d'eau tiède avec gobelets et jouets flottants. L'eau est une stimulation sensorielle forte, très appréciée." },
+  ],
+  7: [
+    { label: "Ramper/4 pattes", tip: "Si bébé est en 4 pattes mais ne rampe pas, rampez vous-même devant lui. L'imitation est son moteur principal." },
+    { label: "Empiler 2 cubes", tip: "Montrez-lui comment empiler, puis guidez ses mains. La coordination bimanuelle et la planification motrice se développent." },
+    { label: "Coucou-caché avancé", tip: "Cachez-vous derrière un meuble et réapparaissez. Il comprend que vous existez même hors de sa vue." },
+    { label: "Instruments musique", tip: "Tambourin, maracas, xylophone jouet. Créer du son volontairement renforce la notion d'action-réaction." },
+    { label: "Nommer objets", tip: "Pointez et nommez tout dans son environnement. Il enregistre des dizaines de mots passifs avant de les dire." },
+    { label: "Boîte à formes", tip: "Même sans réussir, l'essai de faire entrer une forme est excellent pour la résolution de problèmes." },
+  ],
+  8: [
+    { label: "Cabotage meubles", tip: "Placez des jouets attractifs sur le canapé pour l'encourager à se déplacer debout en tenant le bord." },
+    { label: "Pincer petits objets", tip: "Des céréales soufflées ou petits morceaux mous à ramasser. La pince fine pouce-index se précise." },
+    { label: "Pointer images livre", tip: "Demandez 'où est le chien ?' Il va bientôt pointer. Lie le mot à l'image avant même de parler." },
+    { label: "Jouer avec balle", tip: "Une balle légère à pousser, faire rouler, attraper. Développe la coordination oculomotrice et l'anticipation." },
+    { label: "Danser avec musique", tip: "Tenez-le et dansez, ou posez-le debout et laissez-le rebondir. Le rythme musical est inné." },
+    { label: "Jeu d'imitation", tip: "Faites des grimaces, tapez des mains, agitez les bras. Il imite, puis prend l'initiative : c'est lui qui dirige le jeu." },
+  ],
+  9: [
+    { label: "Debout appui", tip: "Laissez-le se mettre debout en tenant votre doigt ou un meuble stable. Ne forcez pas, attendez son initiative." },
+    { label: "Jeu contenant/contenu", tip: "Une boîte et des objets à mettre dedans/enlever. Répété à l'infini, c'est une façon d'explorer la logique spatiale." },
+    { label: "Téléphone jouet", tip: "Parler dans un téléphone jouet stimule le langage. Il va bientôt faire semblant de téléphoner : jeu symbolique naissant." },
+    { label: "Puzzle 2 pièces", tip: "Les puzzles encastrables à grosses poignées développent la résolution de problèmes et la motricité fine." },
+    { label: "Gribouillage", tip: "Crayon épais ou doigt dans la purée. Les premiers traits sont aléatoires mais bébé comprend que son geste laisse une trace." },
+    { label: "Marche avec aide", tip: "Tenez ses deux mains et guidez les premiers pas. Ou utilisez un trotteur derrière." },
+  ],
+  10: [
+    { label: "Premiers pas aidés", tip: "Tenez-lui une main et encouragez. Certains marchent seuls à 10 mois, d'autres à 15 — la fourchette normale est large." },
+    { label: "Empiler 3+ cubes", tip: "La tour qui tombe est aussi enrichissante que la tour debout. Il anticipe, expérimente, recommence." },
+    { label: "Nommer parties corps", tip: "Où est le nez de bébé ? La bouche ? Pointez sur lui et sur vous. Il comprend avant de répondre." },
+    { label: "Jeu de balle", tip: "Assis face à lui, faites rouler la balle et attendez qu'il la renvoie. Tour de rôle = base de la conversation." },
+    { label: "Enfiler gros anneaux", tip: "Les anneaux à enfiler sur un axe développent la coordination œil-main et la planification du geste." },
+    { label: "Lecture quotidienne", tip: "10 min de lecture par jour à cet âge = impact mesurable sur le vocabulaire à 2 ans. La régularité prime sur la durée." },
+  ],
+  11: [
+    { label: "Marche tenue 1 main", tip: "Proposez une main, pas deux. Il doit gérer l'équilibre avec un seul point d'appui — étape vers la marche libre." },
+    { label: "Crayons cire gros", tip: "Des crayons à section triangulaire, faciles à tenir. Le gribouillage développe la préhension et l'expression." },
+    { label: "Jeu symbolique (poupée)", tip: "Donnez à manger à une poupée, mettez-la au lit. Il rejoue des scènes de sa vie — cognition sociale en développement." },
+    { label: "Escaliers à 4 pattes", tip: "Guidez-le pour monter 2-3 marches à 4 pattes, toujours surveillé. Confiance motrice et proprioception." },
+    { label: "Chansons actions", tip: "Tête, épaules, genoux, pieds... Il pointe les parties du corps nommées. Vocabulaire corporel + coordination." },
+    { label: "Jeu sable/eau", tip: "Remplir, vider, transvaser. Ces gestes simples développent la motricité fine et la compréhension du volume." },
+  ],
+  12: [
+    { label: "Marche libre", tip: "Laissez-le explorer pieds nus sur différentes surfaces. Les chutes font partie de l'apprentissage — restez proche sans retenir." },
+    { label: "Jeu encastrement", tip: "Les puzzles et boîtes à formes sont passionnants à 12 mois. L'échec répété suivi du succès construit la persévérance." },
+    { label: "Gribouillage libre", tip: "Grandes feuilles, crayons épais. L'objectif n'est pas de dessiner mais de voir que son geste crée quelque chose." },
+    { label: "Ballon taper pied", tip: "Un ballon léger à pousser avec le pied — coordination motrice complexe qui prépare les jeux de balle futurs." },
+    { label: "Jeu construction", tip: "Empiler, aligner, renverser. Variez les matériaux : cubes, gobelets, boîtes. L'architecture spontanée révèle sa logique." },
+    { label: "Danse libre", tip: "Mettez de la musique et laissez-le bouger librement. La danse spontanée est excellente pour l'équilibre et la joie." },
+  ],
 };
 
 const ExercisesSection = ({ data, update }) => {
   const { theme } = useTheme();
   const [addModal, setAddModal] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [expandedTip, setExpandedTip] = useState(null);
 
   const birthDate = data.baby?.birthDate;
   const ageMonths = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (30.44 * 86400000)) : 0;
@@ -2947,19 +3039,20 @@ const ExercisesSection = ({ data, update }) => {
   const bucketKeys = Object.keys(DEFAULT_EXERCISES).map(Number).sort((a, b) => a - b);
   const bucket = bucketKeys.filter(k => k <= Math.max(0, ageMonths)).pop() ?? 0;
 
-  const predefined = DEFAULT_EXERCISES[bucket] || [];
+  const normalize = (e) => typeof e === "string" ? { label: e, tip: null } : e;
+  const predefined = (DEFAULT_EXERCISES[bucket] || []).map(normalize);
   const custom = Array.isArray(data.customExercises?.[bucket]) ? data.customExercises[bucket] : [];
-  const allExercises = [...predefined, ...custom];
+  const allLabels = [...predefined.map(e => e.label), ...custom];
 
   const today = todayStr();
   const todayChecks = data.exercises?.[today] || {};
-  const done = allExercises.filter(e => todayChecks[e]).length;
+  const done = allLabels.filter(l => todayChecks[l]).length;
 
-  const toggle = (name) => update(d => {
+  const toggle = (label) => update(d => {
     if (!d.exercises) d.exercises = {};
     if (!d.exercises[today]) d.exercises[today] = {};
-    if (d.exercises[today][name]) delete d.exercises[today][name];
-    else d.exercises[today][name] = true;
+    if (d.exercises[today][label]) delete d.exercises[today][label];
+    else d.exercises[today][label] = true;
   });
 
   const addCustom = () => {
@@ -2979,6 +3072,8 @@ const ExercisesSection = ({ data, update }) => {
     if (d.exercises?.[today]?.[name]) delete d.exercises[today][name];
   });
 
+  const toggleTip = (label) => setExpandedTip(prev => prev === label ? null : label);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -2991,37 +3086,63 @@ const ExercisesSection = ({ data, update }) => {
         <Btn onClick={() => setAddModal(true)} small>+ Perso</Btn>
       </div>
 
-      {/* Progression du jour */}
-      <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 8 }}>{done}/{allExercises.length} faits aujourd'hui</div>
+      <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 8 }}>{done}/{allLabels.length} faits aujourd'hui</div>
       <div style={{ background: theme.subtle, borderRadius: 10, height: 8, marginBottom: 20, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${allExercises.length ? (done / allExercises.length) * 100 : 0}%`, background: "linear-gradient(90deg, #A78BFA, #818CF8)", borderRadius: 10, transition: "width .4s" }} />
+        <div style={{ height: "100%", width: `${allLabels.length ? (done / allLabels.length) * 100 : 0}%`, background: "linear-gradient(90deg, #A78BFA, #818CF8)", borderRadius: 10, transition: "width .4s" }} />
       </div>
 
-      {/* Grille */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {predefined.map(name => {
-          const checked = !!todayChecks[name];
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {predefined.map(({ label, tip }) => {
+          const checked = !!todayChecks[label];
+          const open = expandedTip === label;
           return (
-            <div key={name} onClick={() => toggle(name)} style={{ padding: "12px 13px", borderRadius: 14, cursor: "pointer", background: checked ? "#EDE9FE" : theme.card, border: `2px solid ${checked ? "#A78BFA" : theme.border}`, transition: "all .2s" }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text }}>{checked ? "✓ " : ""}{name}</div>
+            <div key={label} style={{ borderRadius: 14, background: checked ? "#EDE9FE" : theme.card, border: `2px solid ${checked ? "#A78BFA" : theme.border}`, transition: "all .2s", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", padding: "12px 13px", gap: 10 }}>
+                <div
+                  onClick={() => toggle(label)}
+                  style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: checked ? "#7C3AED" : theme.subtle, color: checked ? "#fff" : theme.textMuted, cursor: "pointer", transition: "all .2s" }}
+                >
+                  {checked ? "✓" : ""}
+                </div>
+                <div onClick={() => toggle(label)} style={{ flex: 1, fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text, cursor: "pointer", textDecoration: checked ? "line-through" : "none" }}>
+                  {label}
+                </div>
+                {tip && (
+                  <div
+                    onClick={() => toggleTip(label)}
+                    style={{ fontSize: 16, cursor: "pointer", opacity: open ? 1 : 0.5, color: "#7C3AED", flexShrink: 0, lineHeight: 1, padding: "2px 4px" }}
+                    title="Voir l'explication"
+                  >ℹ️</div>
+                )}
+              </div>
+              {open && tip && (
+                <div style={{ margin: "0 13px 12px", padding: "8px 12px", background: theme.subtle, borderRadius: 10, fontSize: 12, color: theme.textMuted, lineHeight: 1.6 }}>
+                  {tip}
+                </div>
+              )}
             </div>
           );
         })}
         {custom.map(name => {
           const checked = !!todayChecks[name];
           return (
-            <div key={name} style={{ padding: "12px 13px", borderRadius: 14, background: checked ? "#EDE9FE" : theme.card, border: `2px dashed ${checked ? "#A78BFA" : "#C4B5FD"}`, transition: "all .2s", position: "relative" }}>
-              <div onClick={() => toggle(name)} style={{ fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text, cursor: "pointer", paddingRight: 18 }}>
-                {checked ? "✓ " : ""}{name}
-                <span style={{ marginLeft: 5, fontSize: 10, color: "#A78BFA", fontWeight: 800 }}>✎</span>
+            <div key={name} style={{ padding: "12px 13px", borderRadius: 14, background: checked ? "#EDE9FE" : theme.card, border: `2px dashed ${checked ? "#A78BFA" : "#C4B5FD"}`, transition: "all .2s", display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                onClick={() => toggle(name)}
+                style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: checked ? "#7C3AED" : theme.subtle, color: checked ? "#fff" : theme.textMuted, cursor: "pointer", transition: "all .2s" }}
+              >
+                {checked ? "✓" : ""}
               </div>
-              <span onClick={() => deleteCustom(name)} style={{ position: "absolute", top: 7, right: 8, fontSize: 12, color: theme.textMuted, cursor: "pointer" }}>✕</span>
+              <div onClick={() => toggle(name)} style={{ flex: 1, fontWeight: 700, fontSize: 13, color: checked ? "#5B21B6" : theme.text, cursor: "pointer" }}>
+                {name} <span style={{ fontSize: 10, color: "#A78BFA", fontWeight: 800 }}>✎</span>
+              </div>
+              <span onClick={() => deleteCustom(name)} style={{ fontSize: 14, color: theme.textMuted, cursor: "pointer", padding: "2px 4px" }}>✕</span>
             </div>
           );
         })}
       </div>
 
-      {allExercises.length === 0 && <EmptyState emoji="🧘" text="Aucun exercice défini pour cet âge" />}
+      {allLabels.length === 0 && <EmptyState emoji="🧘" text="Aucun exercice défini pour cet âge" />}
 
       <Modal open={addModal} onClose={() => setAddModal(false)} title="Ajouter un exercice">
         <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
