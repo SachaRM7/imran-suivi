@@ -1699,19 +1699,154 @@ const GrowthSection = ({ data, update }) => {
   );
 };
 
+// ─── MONTHLY GUIDE DATA ───
+const MONTHLY_GUIDE = {
+  1: {
+    title: "Le premier mois",
+    growth: "Pic de croissance possible entre J7 et J10. Perte de poids normale les premiers jours (jusqu'à 10%).",
+    teeth: null,
+    awakening: "Bébé dort 16-17h par jour. Cycles de sommeil courts (45-60min). Vision floue au-delà de 30cm.",
+    motor: "Réflexes archaïques (grasping, Moro). Mouvements involontaires des bras et jambes.",
+    tip: "Le peau à peau favorise la régulation thermique et le lien d'attachement.",
+  },
+  2: {
+    title: "2 mois — Premier sourire",
+    growth: "Prise de poids régulière (~150-200g/semaine). Premier vaccin (DTP + Pneumocoque).",
+    teeth: null,
+    awakening: "Début du sourire social. Fixe les visages. Commence à gazouiller. Périodes d'éveil plus longues.",
+    motor: "Tient la tête quelques secondes. Mouvements plus fluides. Ouvre et ferme les mains.",
+    tip: "Parlez-lui beaucoup : il apprend les intonations de votre voix.",
+  },
+  3: {
+    title: "3 mois — L'éveil s'accélère",
+    growth: "La croissance ralentit légèrement. Poids de naissance généralement doublé d'ici 4 mois.",
+    teeth: null,
+    awakening: "Rit aux éclats. Reconnaît les visages familiers à distance. Suit des objets à 180°.",
+    motor: "Tête stable en position assise (tenu). Appui sur avant-bras en tummy time. Attrape les jouets.",
+    tip: "C'est l'âge idéal pour introduire un portique d'éveil.",
+  },
+  4: {
+    title: "4 mois — La découverte des mains",
+    growth: "Pic de croissance fréquent. Bébé peut réclamer plus de lait.",
+    teeth: "Premiers signes possibles de poussée dentaire (bave, mâchouille) même si les dents n'arrivent qu'à 6 mois en moyenne.",
+    awakening: "Porte tout à la bouche. Distingue les couleurs primaires. Babille (ba-ba, ga-ga).",
+    motor: "Retournement ventre→dos. Pousse fort sur ses jambes quand on le tient debout.",
+    tip: "Si bébé montre de l'intérêt pour la nourriture, ce n'est pas encore le moment — diversification à partir de 4-6 mois selon avis pédiatre.",
+  },
+  5: {
+    title: "5 mois — Le grand retournement",
+    growth: "Croissance stable. Certains bébés commencent la diversification sur avis médical.",
+    teeth: "Gencives possiblement gonflées. Anneaux de dentition au frais peuvent soulager.",
+    awakening: "Répond à son prénom. Distingue familier et inconnu. Aime les jeux de coucou-caché.",
+    motor: "Retournement dos→ventre. Transfère des objets main à main. Met les pieds à la bouche.",
+    tip: "Laissez bébé explorer pieds nus : ça stimule la proprioception.",
+  },
+  6: {
+    title: "6 mois — Cap diversification",
+    growth: "Début de la diversification alimentaire. Poids de naissance triplé vers 12 mois.",
+    teeth: "Première dent possible (incisives centrales inférieures). Poussée = irritabilité, joues rouges, fesses rouges possibles.",
+    awakening: "Syllabes variées. Tend les bras pour être porté. Grande curiosité pour les objets.",
+    motor: "Tient assis avec appui. Rebondit debout quand on le tient. Début des déplacements.",
+    tip: "Commencez par des légumes un par un pendant 3 jours pour détecter les allergies.",
+  },
+  7: {
+    title: "7 mois — L'explorateur",
+    growth: "Introduction progressive des protéines (viande, poisson, œuf).",
+    teeth: "Incisives centrales en cours. Bavage important.",
+    awakening: "Cherche un objet caché (permanence de l'objet). Réagit clairement à son prénom.",
+    motor: "Assis sans soutien bref. Rampe ou se déplace sur le ventre. Pince grossière.",
+    tip: "Sécurisez la maison : bébé va bientôt se déplacer partout.",
+  },
+  8: {
+    title: "8 mois — L'angoisse de séparation",
+    growth: "Passage aux textures plus épaisses. Introduction des petits morceaux mous.",
+    teeth: "Incisives latérales supérieures possibles.",
+    awakening: "Dit 'mama/papa' sans forcément le sens. Tape des mains. Angoisse du 8ème mois (peur des inconnus).",
+    motor: "Assis stable. Début du 4 pattes. Pince fine pouce-index en développement.",
+    tip: "L'angoisse de séparation est normale : rassurez, ne forcez pas. Rituels de séparation courts.",
+  },
+  9: {
+    title: "9 mois — Debout !",
+    growth: "Visite médicale des 9 mois obligatoire. Diversification bien établie.",
+    teeth: "Incisives latérales (4 dents possibles).",
+    awakening: "Comprend 'non'. Pointe du doigt. Fait au revoir. Peur des inconnus encore présente.",
+    motor: "Se met debout en s'agrippant. Cabotage le long des meubles. Morceaux mous acceptés.",
+    tip: "Proposez des aliments en morceaux (DME/BLW) pour développer la motricité fine.",
+  },
+  10: {
+    title: "10 mois — Le petit singe",
+    growth: "3 repas + lait. Introduction progressive de tous les aliments.",
+    teeth: "4-6 dents possibles.",
+    awakening: "Imite les adultes. 1-2 mots significatifs. Comprend des consignes simples.",
+    motor: "Cabotage fluide. Pince pouce-index précise. Met et enlève des objets d'un contenant.",
+    tip: "Encouragez l'autonomie à table : cuillère, gobelet.",
+  },
+  11: {
+    title: "11 mois — Presque debout",
+    growth: "Alimentation proche de celle de la famille (sauf sel, sucre, miel).",
+    teeth: "6-8 dents possibles. Premières molaires en approche.",
+    awakening: "Montre du doigt ce qu'il veut. Comprend de plus en plus. Empile 2 cubes.",
+    motor: "Debout seul quelques secondes. Marche tenu une ou deux mains. Mange avec les doigts.",
+    tip: "Lisez ensemble chaque jour : le vocabulaire se construit maintenant.",
+  },
+  12: {
+    title: "12 mois — Joyeux anniversaire !",
+    growth: "Poids de naissance triplé. Taille augmentée de ~50%. Visite des 12 mois.",
+    teeth: "8 dents en moyenne. ROR 1ère dose + Méningocoque C.",
+    awakening: "3-5 mots significatifs. Comprend ~50 mots. Jeu symbolique (donner à manger à la poupée).",
+    motor: "Premiers pas. Gobelet seul. Câlins et bisous volontaires.",
+    tip: "Chaque enfant a son rythme : ne pas comparer avec les autres.",
+  },
+  15: {
+    title: "15 mois",
+    growth: "Croissance ralentit. Appétit possiblement plus irrégulier (néophobie possible).",
+    teeth: "Premières molaires en cours (13-19 mois).",
+    awakening: "10-15 mots. Pointe des images dans les livres. Frustration s'exprime clairement.",
+    motor: "Court maladroitement. Lance une balle. Boit au verre seul.",
+    tip: "La néophobie alimentaire est normale. Proposez sans forcer, ça peut prendre 10-15 expositions.",
+  },
+  18: {
+    title: "18 mois",
+    growth: "Visite des 18 mois. ROR 2ème dose.",
+    teeth: "Canines en cours (16-22 mois). Douloureux — gel gingival si besoin.",
+    awakening: "~50 mots actifs. Combine 2 mots. Jeu symbolique avancé (cuisine, ménage).",
+    motor: "Court bien. Monte/descend les escaliers (avec aide). Mange seul proprement.",
+    tip: "Encouragez le langage : reformulez ses phrases en version complète plutôt que de corriger.",
+  },
+  24: {
+    title: "24 mois — 2 ans",
+    growth: "Visite des 2 ans. Courbe de croissance plus linéaire.",
+    teeth: "20 dents de lait bientôt complètes. 2èmes molaires (23-33 mois).",
+    awakening: "~200 mots. Phrases 2-3 mots. Joue avec d'autres enfants. Début de la propreté diurne.",
+    motor: "Saute sur place. S'habille partiellement. Pédale un tricycle.",
+    tip: "Pour la propreté, suivez les signes de maturité de l'enfant, pas le calendrier.",
+  },
+};
+
 // ─── SECTION: Milestones ───
 const MilestonesSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const ageM = babyAgeMonths(data.baby.birthDate);
   const availableMonths = Object.keys(data.milestones || DEFAULT_MILESTONES).map(Number).sort((a, b) => a - b);
   const [month, setMonth] = useState(availableMonths.includes(ageM) ? ageM : availableMonths.find(m => m >= ageM) || availableMonths[0] || 1);
+  const [guideOpen, setGuideOpen] = useState(false);
   const toggle = (m, idx) => { const key = `${m}-${idx}`; update(d => { d.milestonesChecked[key] = !d.milestonesChecked[key]; }); };
   const items = (data.milestones || DEFAULT_MILESTONES)[month] || [];
   const checkedN = items.filter((_, i) => data.milestonesChecked?.[`${month}-${i}`]).length;
 
+  const guide = MONTHLY_GUIDE[month] || null;
+  const guideRows = guide ? [
+    guide.growth   && { icon: "📈", label: "Croissance", text: guide.growth },
+    guide.teeth    && { icon: "🦷", label: "Dents",      text: guide.teeth },
+    guide.awakening && { icon: "💡", label: "Éveil",     text: guide.awakening },
+    guide.motor    && { icon: "🏃", label: "Motricité",  text: guide.motor },
+    guide.tip      && { icon: "✨", label: "Conseil",    text: guide.tip },
+  ].filter(Boolean) : [];
+
   return (
     <div>
-      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 4 }}>🏆 Étapes de développement</div>
-      <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 14 }}>Mois {month} — {checkedN}/{items.length} acquises</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 4 }}>🏆 Étapes de développement</div>
+      <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 14 }}>Mois {month} — {checkedN}/{items.length} acquises</div>
 
       <div style={{ display: "flex", gap: 5, overflowX: "auto", marginBottom: 14, paddingBottom: 4 }}>
         {availableMonths.map(m => {
@@ -1721,15 +1856,40 @@ const MilestonesSection = ({ data, update }) => {
             <span key={m} onClick={() => setMonth(m)} style={{
               flex: "0 0 auto", minWidth: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
               fontWeight: 800, fontSize: 13, cursor: "pointer",
-              background: month === m ? "#7C3AED" : (total > 0 && done === total) ? "#D1FAE5" : "#F9FAFB",
-              color: month === m ? "#fff" : (total > 0 && done === total) ? "#059669" : "#6B7280",
+              background: month === m ? "#7C3AED" : (total > 0 && done === total) ? "#D1FAE5" : theme.cardBg,
+              color: month === m ? "#fff" : (total > 0 && done === total) ? "#059669" : theme.textMuted,
               border: m === ageM && month !== m ? "2px solid #C4B5FD" : "1.5px solid transparent"
             }}>{m}</span>
           );
         })}
       </div>
 
-      <div style={{ background: "#F3F4F6", borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
+      {guide && (
+        <div style={{ marginBottom: 14, borderRadius: 18, border: "1.5px solid #C4B5FD", background: theme.cardBg, overflow: "hidden" }}>
+          <div
+            onClick={() => setGuideOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", cursor: "pointer" }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#7C3AED" }}>📅 Guide — {guide.title}</div>
+            <div style={{ fontSize: 18, color: "#7C3AED", lineHeight: 1, transition: "transform .2s", transform: guideOpen ? "rotate(180deg)" : "rotate(0deg)" }}>›</div>
+          </div>
+          {guideOpen && (
+            <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {guideRows.map(({ icon, label, text }) => (
+                <div key={label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 13, color: theme.text, lineHeight: 1.5 }}>{text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ background: theme.border, borderRadius: 10, height: 8, marginBottom: 18, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${items.length ? (checkedN / items.length) * 100 : 0}%`, background: "linear-gradient(90deg, #A78BFA, #7C3AED)", borderRadius: 10, transition: "width .4s" }} />
       </div>
 
@@ -2353,15 +2513,104 @@ ${sections}
 <footer>Généré par Baby Tracker</footer>
 </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `carnet-sante-${data.baby.name || "bebe"}-${todayStr()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert("📄 Rapport téléchargé ! Ouvrez-le dans Safari/Chrome puis utilisez Partager → Imprimer pour générer le PDF.");
   };
+
+  const printReport = () => {
+    let sections = "";
+    if (todayBottles.length > 0) {
+      const total = todayBottles.reduce((s, b) => s + (b.amount || 0), 0);
+      sections += `<h3>🍼 Biberons — ${todayBottles.length} repas · ${total} ml au total</h3>
+      <table><tr><th>Heure</th><th>Quantité</th><th>Note</th></tr>
+      ${todayBottles.map(b => `<tr><td>${fmtTime(b.time)}</td><td><b>${b.amount} ml</b></td><td>${b.note || "—"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayDiapers.length > 0) {
+      sections += `<h3>🧷 Couches — ${todayDiapers.length} au total</h3>
+      <table><tr><th>Heure</th><th>Type</th><th>Note</th></tr>
+      ${todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return `<tr><td>${fmtTime(d.time)}</td><td>${d.type}${details ? ` · ${details}` : ""}</td><td>${d.note || "—"}</td></tr>`; }).join("")}
+      </table>`;
+    }
+    if (todaySleep.length > 0) {
+      sections += `<h3>😴 Sommeil</h3>
+      <table><tr><th>Début</th><th>Fin</th><th>Durée</th><th>Type</th></tr>
+      ${todaySleep.map(s => `<tr><td>${fmtTime(s.start)}</td><td>${s.end ? fmtTime(s.end) : "En cours"}</td><td>${durStr(s)}</td><td>${s.type || "sieste"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayTemp.length > 0) {
+      sections += `<h3>🌡️ Températures</h3>
+      <table><tr><th>Heure</th><th>Valeur</th><th>Note</th></tr>
+      ${todayTemp.map(t => `<tr><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note || "—"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayMeds.length > 0) {
+      sections += `<h3>💊 Médicaments</h3>
+      <table><tr><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>
+      ${todayMeds.map(m => `<tr><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose || "—"}</td><td>${m.note || "—"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayBaths.length > 0) {
+      sections += `<h3>🛁 Bains</h3>
+      <table><tr><th>Heure</th><th>Température eau</th><th>Note</th></tr>
+      ${todayBaths.map(b => `<tr><td>${fmtTime(b.time)}</td><td>${b.temp}°C</td><td>${b.note || "—"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayVax.length > 0) {
+      sections += `<h3>💉 Vaccins réalisés aujourd'hui</h3>
+      <table><tr><th>Vaccin</th><th>Âge prévu</th></tr>
+      ${todayVax.map(v => `<tr><td><b>${v.name}</b></td><td>${v.age}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayFoods.length > 0) {
+      sections += `<h3>🥕 Aliments introduits aujourd'hui</h3>
+      <table><tr><th>Aliment</th><th>Réaction</th></tr>
+      ${todayFoods.map(([name, v]) => `<tr><td><b>${name}</b></td><td>${v.reaction || "ok"}</td></tr>`).join("")}
+      </table>`;
+    }
+    if (todayNotes.length > 0) {
+      sections += `<h3>📝 Notes du jour</h3>
+      ${todayNotes.map(n => `<blockquote>${n.mood} ${n.text}</blockquote>`).join("")}`;
+    }
+    if (!sections) sections = `<p class="empty">Aucune donnée enregistrée aujourd'hui.</p>`;
+
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Rapport ${todayFmt} — ${data.baby.name}</title>
+<style>body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:750px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.subtitle{color:#6B7280;margin-bottom:24px;font-size:13px}h3{color:#374151;margin:20px 0 8px;font-size:15px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}.empty{color:#9CA3AF;font-style:italic}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}</style>
+</head><body>
+<h1>Rapport journalier — ${data.baby.name} 👶</h1>
+<p class="subtitle">${todayFmt}</p>
+${sections}
+<footer>Généré par Baby Tracker</footer>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;width:0;height:0;border:none;";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+      catch(e) { alert("Impression non disponible. Utilisez le bouton Télécharger."); }
+      setTimeout(() => { if (document.body.contains(iframe)) document.body.removeChild(iframe); }, 1000);
+    }, 500);
+  };
+
+  const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 22, fontWeight: 900 }}>📄 Rapport du jour</div>
-        {hasData && <Btn onClick={exportPDF} small>🖨️ Imprimer</Btn>}
+        {hasData && <Btn onClick={exportPDF} small>📥 Télécharger</Btn>}
       </div>
       <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 16 }}>
         {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
@@ -2424,7 +2673,12 @@ ${sections}
         </Card>
       )}
 
-      {hasData && <Btn onClick={exportPDF} full style={{ marginTop: 8 }}>🖨️ Imprimer / Exporter en PDF</Btn>}
+      {hasData && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+          <Btn onClick={exportPDF} full>📥 Télécharger le carnet de santé</Btn>
+          {!isPWA && <Btn onClick={printReport} full>🖨️ Imprimer directement</Btn>}
+        </div>
+      )}
 
       <div style={{ marginTop: 20, borderTop: "1.5px solid #F3F4F6", paddingTop: 18 }}>
         <Card onClick={() => setWeekModal(true)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
