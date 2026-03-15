@@ -246,6 +246,10 @@ input, textarea, select { font-family: 'Nunito', sans-serif; }
 @keyframes syncPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+.nav-fixed { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .nav-fixed { padding-bottom: env(safe-area-inset-bottom) !important; }
+}
 `;
 
 // ─── Reusable Components ───
@@ -3194,7 +3198,7 @@ export default function App() {
       <style>{CSS}</style>
       <SyncBadge syncing={syncing} />
 
-      <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: theme.bg, paddingBottom: 80, transition: "background .2s" }}>
+      <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: theme.bg, paddingBottom: 100, transition: "background .2s" }}>
         {section !== "home" && (
           <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: theme.headerBg, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${theme.border}` }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{data.baby.name}</span>
@@ -3206,7 +3210,7 @@ export default function App() {
         </div>
 
         {/* Bottom nav */}
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: theme.navBg, borderTop: `1.5px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "8px 0 20px", zIndex: 200, transition: "background .2s" }}>
+        <div className="nav-fixed" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: `${theme.navBg}F0`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: `1.5px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", paddingTop: 8, zIndex: 200, transition: "background .2s" }}>
           {navItems.map(n => {
             if (n.isCenter) return (
               <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -16 }}>
