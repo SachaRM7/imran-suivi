@@ -94,7 +94,7 @@ const SleepSection = ({data,update}) => {
                 )}
               </div>
               <div style={{fontSize:12,color:t.textMuted,marginTop:1}}>
-                {fmt(s.start)} {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}":""}
+                {fmt(s.start)} {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}`:"" }
               </div>
             </div>
             <IconBtn onClick={()=>remove(s.id)} style={{padding:8,margin:-8}}>🗑</IconBtn>
