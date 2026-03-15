@@ -235,6 +235,17 @@ const babyAgeText = (bd) => {
 
 const todayItems = (arr) => (arr || []).filter(i => (i.date || i.time || i.start || "").startsWith(todayStr()));
 
+// Sleep cross-day: inclut les entrées qui commencent OU se terminent ce jour
+const sleepForDay = (sleepArr, dateStr) =>
+  (sleepArr || []).filter(s => {
+    const startDay = (s.start || "").slice(0, 10);
+    const endDay = s.end ? s.end.slice(0, 10) : null;
+    return startDay === dateStr || endDay === dateStr;
+  });
+
+// Retourne la date ISO du jour précédent
+const prevDateStr = (ds) => { const d = new Date(ds + "T12:00:00"); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); };
+
 // ─── Shared CSS ───
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -481,7 +492,7 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
   const age = babyAgeText(data.baby.birthDate);
   const todayB = todayItems(data.bottles);
   const todayD = todayItems(data.diapers);
-  const todayS = todayItems(data.sleep);
+  const todayS = sleepForDay(data.sleep, todayStr());
   const totalMl = todayB.reduce((s, b) => s + (b.amount || 0), 0);
   const teethCount = Object.keys(data.teeth || {}).length;
   const foodCount = Object.keys(data.foods || {}).filter(k => data.foods[k]).length;
@@ -1064,7 +1075,7 @@ const SleepSection = ({ data, update }) => {
   const remove = (id) => update(d => { d.sleep = d.sleep.filter(x => x.id !== id); });
   const ongoing = (data.sleep||[]).find(s => !s.end);
   const isNight = ongoing?.type === "nuit";
-  const dayItems = [...(data.sleep||[])].filter(s => s.start?.startsWith(dateStr)).sort((a, b) => b.start.localeCompare(a.start));
+  const dayItems = sleepForDay(data.sleep, dateStr).sort((a, b) => b.start.localeCompare(a.start));
   const dur = (s) => { if (!s.end) return "En cours 💤"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
 
   return (
@@ -1091,13 +1102,30 @@ const SleepSection = ({ data, update }) => {
       )}
 
       {dayItems.length === 0 && <EmptyState emoji="😴" text={`Aucune sieste — ${dateLabel}`} />}
-      {dayItems.map(s => (
+      {dayItems.map(s => {
+        const startDay = (s.start || "").slice(0, 10);
+        const endDay = s.end ? s.end.slice(0, 10) : null;
+        const fromPrev = startDay !== dateStr;
+        const toNext = endDay && endDay !== dateStr;
+        const crossBadge = fromPrev
+          ? (startDay === prevDateStr(dateStr) ? "🌙 Depuis hier soir" : `🌙 Depuis le ${fmt(s.start)}`)
+          : toNext
+          ? (endDay === (() => { const d = new Date(dateStr + "T12:00:00"); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })()
+              ? "☀️ Réveil demain matin"
+              : `☀️ Réveil le ${fmt(s.end)}`)
+          : null;
+        return (
         <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ marginBottom: 8, cursor: "pointer" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? (s.type === "nuit" ? "🌙" : "💤") : s.type === "nuit" ? "🌙" : "😴"}</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
-              <div style={{ fontSize: 12, color: theme.textMuted }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{dur(s)}</div>
+                {crossBadge && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#EEF2FF", color: "#4338CA" }}>{crossBadge}</span>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>{fmt(s.start)} {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)}` : ""}</div>
             </div>
             <span style={{ fontSize: 11, color: theme.textMuted, opacity: 0.5, marginRight: 4 }}>✏️</span>
             <span onClick={e => { e.stopPropagation(); remove(s.id); }}><IconBtn>🗑</IconBtn></span>
@@ -1117,7 +1145,8 @@ const SleepSection = ({ data, update }) => {
             </div>
           )}
         </Card>
-      ))}
+        );
+      })}
 
       <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier le sommeil" : "Ajouter sommeil"}>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
