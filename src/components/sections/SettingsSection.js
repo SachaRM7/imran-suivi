@@ -57,9 +57,6 @@ const tempStats = (temps) => {
   return `min ${Math.min(...vals)}°C · max ${Math.max(...vals)}°C`;
 };
 
-// ─── Section HTML pour une journée (rapport jour) ──────────────────────────
-const buildDailySection = (label, rows) =>
-  rows ? `<h2>${label}</h2>${rows}` : "";
 
 const SettingsSection = ({data,profile,darkMode,setDarkMode,onSwitchProfile}) => {
   const t = useTheme();

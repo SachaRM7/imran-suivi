@@ -156,7 +156,7 @@ const RecipesSection = ({data, update}) => {
             <div style={{display:"flex",gap:6}}>
               {REACTIONS.map(rx => (
                 <button key={rx.key} onClick={() => setReactionFn(r.id, rx.key)} style={{
-                  flex:1,padding:"6px 4px",borderRadius:10,border:"none",cursor:"pointer",
+                  flex:1,padding:"6px 4px",borderRadius:10,cursor:"pointer",
                   background:rxn===rx.key ? rx.bg : t.chipBg,
                   color:rxn===rx.key ? rx.color : t.textSoft,
                   fontWeight:700,fontSize:13,

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTheme } from "../../theme/Theme";
 import { Card, Btn, Input, Modal, Chip, IconBtn } from "../ui";
-import { uid, todayStr, fmt } from "../../utils/helpers";
+import { uid, todayStr } from "../../utils/helpers";
 
 const BooksSection = ({data, update}) => {
   const t = useTheme();
