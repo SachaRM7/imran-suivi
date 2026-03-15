@@ -1550,14 +1550,24 @@ const OMS_WEIGHT = {
 const GrowthSection = ({ data, update }) => {
   const { theme } = useTheme();
   const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
   const [head, setHead] = useState("");
   const [date, setDate] = useState(todayStr());
 
+  const closeModal = () => { setModal(false); setEditId(null); setWeight(""); setHeight(""); setHead(""); setDate(todayStr()); };
+
   const add = () => {
-    update(d => { d.growth.push({ id: uid(), date, weight: Number(weight) || null, height: Number(height) || null, head: Number(head) || null }); });
-    setModal(false); setWeight(""); setHeight(""); setHead("");
+    if (editId) {
+      update(d => {
+        const g = d.growth.find(x => x.id === editId);
+        if (g) { g.date = date; g.weight = Number(weight) || null; g.height = Number(height) || null; g.head = Number(head) || null; }
+      });
+    } else {
+      update(d => { d.growth.push({ id: uid(), date, weight: Number(weight) || null, height: Number(height) || null, head: Number(head) || null }); });
+    }
+    closeModal();
   };
   const remove = (id) => update(d => { d.growth = d.growth.filter(x => x.id !== id); });
   const sorted = [...(data.growth||[])].sort((a, b) => b.date.localeCompare(a.date));
@@ -1598,7 +1608,7 @@ const GrowthSection = ({ data, update }) => {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>📏 Croissance</div>
-        <Btn onClick={() => { setDate(todayStr()); setModal(true); }} small>+ Mesure</Btn>
+        <Btn onClick={() => { setEditId(null); setDate(todayStr()); setWeight(""); setHeight(""); setHead(""); setModal(true); }} small>+ Mesure</Btn>
       </div>
 
       {/* Courbe OMS */}
@@ -1673,11 +1683,12 @@ const GrowthSection = ({ data, update }) => {
               {g.head && <span>🧠 {g.head} cm</span>}
             </div>
           </div>
+          <IconBtn onClick={() => { setEditId(g.id); setDate(g.date); setWeight(g.weight ?? ""); setHeight(g.height ?? ""); setHead(g.head ?? ""); setModal(true); }}>✏️</IconBtn>
           <IconBtn onClick={() => remove(g.id)}>🗑</IconBtn>
         </Card>
       ))}
 
-      <Modal open={modal} onClose={() => setModal(false)} title="Nouvelle mesure">
+      <Modal open={modal} onClose={closeModal} title={editId ? "Modifier la mesure" : "Nouvelle mesure"}>
         <Input label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
         <Input label="Poids (kg)" type="number" step="0.01" value={weight} onChange={e => setWeight(e.target.value)} placeholder="6.5" />
         <Input label="Taille (cm)" type="number" step="0.1" value={height} onChange={e => setHeight(e.target.value)} placeholder="67" />
