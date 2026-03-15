@@ -875,16 +875,37 @@ const DiapersSection = ({ data, update }) => {
     setColor(col);
   };
 
-  const openEdit = (d) => { setEditId(d.id); setModalType(d.type); setTime(d.time); setNote(d.note || ""); setModal(true); };
+  const openEdit = (d) => {
+    setEditId(d.id);
+    setModalType(d.type);
+    setTime(d.time?.slice(0, 16) || nowStr());
+    setNote(d.note || "");
+    setQuantity(d.quantity || null);
+    setConsistency(d.consistency || null);
+    setColor(d.color === "Normal" ? "Marron" : d.color || null);
+    setModal(true);
+  };
 
   const add = () => {
     if (editId) {
-      update(d => { const e = d.diapers.find(x => x.id === editId); if (e) { e.type = modalType; e.time = time; e.note = note; } });
+      update(d => {
+        const e = d.diapers.find(x => x.id === editId);
+        if (e) {
+          e.type = modalType; e.time = time; e.note = note;
+          e.quantity = (modalType === "pipi" || modalType === "mixte") ? quantity : null;
+          e.consistency = (modalType === "caca" || modalType === "mixte") ? consistency : null;
+          e.color = (modalType === "caca" || modalType === "mixte") ? color : null;
+        }
+      });
     } else {
-      update(d => { d.diapers.push({ id: uid(), type: modalType, time, note }); });
+      const entry = { id: uid(), type: modalType, time, note };
+      if (modalType === "pipi" || modalType === "mixte") entry.quantity = quantity;
+      if (modalType === "caca" || modalType === "mixte") { entry.consistency = consistency; entry.color = color; }
+      update(d => { d.diapers.push(entry); });
       triggerSleepWarn();
     }
     setModal(false); setNote(""); setEditId(null);
+    setQuantity(null); setConsistency(null); setColor(null);
   };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
   const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
@@ -907,7 +928,7 @@ const DiapersSection = ({ data, update }) => {
           <div style={{ fontSize: 22, fontWeight: 900 }}>🧷 Couches</div>
           <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{todayD.length} couche{todayD.length > 1 ? "s" : ""}</div>
         </div>
-        <Btn onClick={() => { setEditId(null); setTime(nowStr()); setNote(""); setModal(true); }} small>+ Détail</Btn>
+        <Btn onClick={() => { setEditId(null); setTime(nowStr()); setNote(""); setQuantity(null); setConsistency(null); setColor(null); setModal(true); }} small>+ Détail</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
@@ -1025,12 +1046,42 @@ const DiapersSection = ({ data, update }) => {
         </Card>
       ))}
 
-      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier la couche" : "Couche"}>
+      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); setQuantity(null); setConsistency(null); setColor(null); }} title={editId ? "Modifier la couche" : "Couche"}>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {["pipi", "caca", "mixte"].map(t => <Chip key={t} active={modalType === t} onClick={() => setModalType(t)} color="#F59E0B">{TYPE_EMOJIS[t]} {TYPE_LABELS[t]}</Chip>)}
         </div>
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
-        <Input label="Note" value={note} onChange={e => setNote(e.target.value)} placeholder="Couleur, consistance..." />
+        {(modalType === "pipi" || modalType === "mixte") && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Quantité 💦</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["+", "++", "+++"].map(q => (
+                <button key={q} onClick={() => setQuantity(quantity === q ? null : q)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${quantity === q ? "#6366F1" : theme.border}`, background: quantity === q ? "#EEF2FF" : theme.card, cursor: "pointer", fontWeight: 800, fontSize: 14, color: theme.text, transition: "all 0.15s" }}>{q}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        {(modalType === "caca" || modalType === "mixte") && (
+          <>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Consistance 💩</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["Dur", "Normal", "Liquide"].map(c => (
+                  <button key={c} onClick={() => setConsistency(consistency === c ? null : c)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${consistency === c ? "#F59E0B" : theme.border}`, background: consistency === c ? "#FEF3C7" : theme.card, cursor: "pointer", fontWeight: 700, fontSize: 13, color: theme.text, transition: "all 0.15s" }}>{c}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Couleur</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["Marron", "Vert", "Jaune", "Noir"].map(c => (
+                  <button key={c} onClick={() => setColor(color === c ? null : c)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${color === c ? "#6B7280" : theme.border}`, background: color === c ? "#F3F4F6" : theme.card, cursor: "pointer", fontWeight: 700, fontSize: 11, color: theme.text, transition: "all 0.15s" }}>{c}</button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        <Input label="Note" value={note} onChange={e => setNote(e.target.value)} placeholder="Observations..." />
         <Btn onClick={add} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
     </div>
@@ -2493,398 +2544,177 @@ const NotesSection = ({ data, update }) => {
 
 // ─── SECTION: PDF / Rapport du jour ───
 const PdfSection = ({ data }) => {
+  const { theme } = useTheme();
   const today = todayStr();
-  const todayFmt = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const [weekModal, setWeekModal] = useState(false);
-  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
+  const age = babyAgeText(data.baby?.birthDate);
 
-  // Compute 4 last weeks (Mon–Sun)
-  const weeks = (() => {
-    const pad = n => String(n).padStart(2, "0");
-    const dateStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const now = new Date();
-    const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
-    const monday = new Date(now); monday.setDate(now.getDate() - dow); monday.setHours(0,0,0,0);
-    return Array.from({ length: 4 }, (_, w) => {
-      const start = new Date(monday); start.setDate(monday.getDate() - w * 7);
-      const end = new Date(start); end.setDate(start.getDate() + 6);
-      const label = `${start.getDate()} – ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
-      return { start: dateStr(start), end: dateStr(end), label };
-    });
-  })();
+  const CSS = `body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:780px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.sub{color:#6B7280;margin-bottom:24px;font-size:13px}h2{color:#7C3AED;margin:24px 0 8px;font-size:16px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}.tag{display:inline-block;background:#F5F3FF;padding:4px 10px;border-radius:8px;margin:3px;font-size:13px}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}`;
 
-  const exportWeeklyPDF = () => {
-    const week = weeks[selectedWeekIdx];
-    const pad = n => String(n).padStart(2, "0");
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(week.start + "T12:00:00"); d.setDate(d.getDate() + i);
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    });
-    const durMin = (s) => { if (!s.end) return 0; return Math.round((new Date(s.end) - new Date(s.start)) / 60000); };
-    const fmtMin = (m) => m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m}min`;
-
-    // Per-day stats
-    const summaryRows = days.map(d => {
-      const bs = (data.bottles||[]).filter(b => b.time?.startsWith(d));
-      const ds = (data.diapers||[]).filter(x => x.time?.startsWith(d));
-      const ss = (data.sleep||[]).filter(s => s.start?.startsWith(d));
-      const totalMl = bs.reduce((s, b) => s + (b.amount||0), 0);
-      const totalSleep = ss.filter(s => s.end).reduce((s, x) => s + durMin(x), 0);
-      const label = new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-      return { d, label, bottles: bs.length, ml: totalMl, diapers: ds.length, sleep: ss.length, sleepMin: totalSleep };
-    });
-
-    const inWeek = (ts) => ts && ts.slice(0, 10) >= week.start && ts.slice(0, 10) <= week.end;
-    const weekBottles = (data.bottles||[]).filter(b => inWeek(b.time));
-    const weekDiapers = (data.diapers||[]).filter(x => inWeek(x.time));
-    const weekSleep   = (data.sleep||[]).filter(s => inWeek(s.start));
-    const weekMeds    = (data.medicines||[]).filter(m => inWeek(m.time));
-    const weekTemp    = (data.temperature||[]).filter(t => inWeek(t.time));
-    const weekBaths   = (data.baths||[]).filter(b => inWeek(b.time));
-    const weekNotes   = (data.notes||[]).filter(n => inWeek(n.date));
-
-    const avgMl = Math.round(weekBottles.reduce((s,b)=>s+(b.amount||0),0) / 7);
-    const pipi = weekDiapers.filter(d=>d.type==="pipi").length;
-    const caca = weekDiapers.filter(d=>d.type==="caca").length;
-    const mixte = weekDiapers.filter(d=>d.type==="mixte").length;
-
-    const summaryTable = `
-<h3>📅 Résumé jour par jour</h3>
-<table>
-<tr><th>Jour</th><th>🍼 Biberons</th><th>ml</th><th>🧷 Couches</th><th>😴 Siestes</th><th>Sommeil total</th></tr>
-${summaryRows.map(r => `<tr><td>${r.label}</td><td>${r.bottles}</td><td>${r.ml ? r.ml+"ml" : "—"}</td><td>${r.diapers}</td><td>${r.sleep}</td><td>${r.sleepMin ? fmtMin(r.sleepMin) : "—"}</td></tr>`).join("")}
-</table>`;
-
-    let sections = summaryTable;
-
-    if (weekBottles.length > 0) {
-      sections += `<h3>🍼 Biberons — ${weekBottles.length} repas · ${weekBottles.reduce((s,b)=>s+(b.amount||0),0)}ml total · moy. ${avgMl}ml/jour</h3>
-<table><tr><th>Jour</th><th>Heure</th><th>Quantité</th><th>Note</th></tr>
-${weekBottles.sort((a,b)=>a.time.localeCompare(b.time)).map(b => `<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td><b>${b.amount}ml</b></td><td>${b.note||"—"}</td></tr>`).join("")}
-</table>`;
-    }
-    if (weekDiapers.length > 0) {
-      sections += `<h3>🧷 Couches — ${weekDiapers.length} · Pipi: ${pipi} / Caca: ${caca} / Mixte: ${mixte}</h3>
-<table><tr><th>Jour</th><th>Heure</th><th>Type</th></tr>
-${weekDiapers.sort((a,b)=>a.time.localeCompare(b.time)).map(d => { const details=[d.quantity,d.consistency,d.color].filter(Boolean).join(" · "); return `<tr><td>${new Date(d.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(d.time)}</td><td>${d.type}${details?` · ${details}`:""}</td></tr>`; }).join("")}
-</table>`;
-    }
-    if (weekSleep.length > 0) {
-      const totalMin = weekSleep.filter(s=>s.end).reduce((s,x)=>s+durMin(x),0);
-      sections += `<h3>😴 Sommeil — ${weekSleep.length} siestes · total ${fmtMin(totalMin)}</h3>
-<table><tr><th>Jour</th><th>Début</th><th>Fin</th><th>Durée</th></tr>
-${weekSleep.sort((a,b)=>a.start.localeCompare(b.start)).map(s => `<tr><td>${new Date(s.start).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(s.start)}</td><td>${s.end?fmtTime(s.end):"En cours"}</td><td>${s.end?fmtMin(durMin(s)):"—"}</td></tr>`).join("")}
-</table>`;
-    }
-    if (weekTemp.length > 0) {
-      sections += `<h3>🌡️ Températures</h3>
-<table><tr><th>Jour</th><th>Heure</th><th>Valeur</th><th>Note</th></tr>
-${weekTemp.sort((a,b)=>a.time.localeCompare(b.time)).map(t => `<tr><td>${new Date(t.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note||"—"}</td></tr>`).join("")}
-</table>`;
-    }
-    if (weekMeds.length > 0) {
-      sections += `<h3>💊 Médicaments</h3>
-<table><tr><th>Jour</th><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>
-${weekMeds.sort((a,b)=>a.time.localeCompare(b.time)).map(m => `<tr><td>${new Date(m.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose||"—"}</td><td>${m.note||"—"}</td></tr>`).join("")}
-</table>`;
-    }
-    if (weekBaths.length > 0) {
-      sections += `<h3>🛁 Bains</h3>
-<table><tr><th>Jour</th><th>Heure</th><th>Temp. eau</th><th>Note</th></tr>
-${weekBaths.sort((a,b)=>a.time.localeCompare(b.time)).map(b => `<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td>${b.temp}°C</td><td>${b.note||"—"}</td></tr>`).join("")}
-</table>`;
-    }
-    if (weekNotes.length > 0) {
-      sections += `<h3>📝 Journal</h3>
-${weekNotes.map(n => `<blockquote><b>${new Date(n.date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</b><br>${n.mood||""} ${n.text}</blockquote>`).join("")}`;
-    }
-
-    const titleWeek = `Semaine du ${week.label}`;
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>${titleWeek} — ${data.baby.name}</title>
-<style>body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:800px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.subtitle{color:#6B7280;margin-bottom:24px;font-size:13px}h3{color:#374151;margin:24px 0 8px;font-size:15px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}</style>
-</head><body>
-<h1>Rapport hebdomadaire — ${data.baby.name} 👶</h1>
-<p class="subtitle">${titleWeek}</p>
-${sections}
-<footer>Généré par Baby Tracker</footer>
-</body></html>`;
-
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
-    setWeekModal(false);
-  };
-
-  const todayBottles = (data.bottles || []).filter(b => b.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
-  const todayDiapers = (data.diapers || []).filter(d => d.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
-  const todaySleep   = (data.sleep || []).filter(s => (s.start || "").startsWith(today)).sort((a,b) => a.start.localeCompare(b.start));
-  const todayMeds    = (data.medicines || []).filter(m => m.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
-  const todayTemp    = (data.temperature || []).filter(t => t.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
-  const todayBaths   = (data.baths || []).filter(b => b.time?.startsWith(today)).sort((a,b) => a.time.localeCompare(b.time));
-  const todayNotes   = (data.notes || []).filter(n => n.date?.startsWith(today));
-  const todayVax     = VACCINE_SCHEDULE.flatMap((p, pi) => p.vaccines.map((v, vi) => ({ name: v, age: p.age, key: `${pi}-${vi}` }))).filter(v => data.vaccines?.[v.key] === today);
-  const todayFoods   = Object.entries(data.foods || {}).filter(([, v]) => v?.date === today);
-
-  const durStr = (s) => { if (!s.end) return "En cours"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
-
-  const hasData = todayBottles.length + todayDiapers.length + todaySleep.length + todayMeds.length + todayTemp.length + todayBaths.length + todayNotes.length + todayVax.length + todayFoods.length > 0;
-
-  const exportPDF = () => {
-    let sections = "";
-
-    if (todayBottles.length > 0) {
-      const total = todayBottles.reduce((s, b) => s + (b.amount || 0), 0);
-      sections += `<h3>🍼 Biberons — ${todayBottles.length} repas · ${total} ml au total</h3>
-      <table><tr><th>Heure</th><th>Quantité</th><th>Note</th></tr>
-      ${todayBottles.map(b => `<tr><td>${fmtTime(b.time)}</td><td><b>${b.amount} ml</b></td><td>${b.note || "—"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayDiapers.length > 0) {
-      sections += `<h3>🧷 Couches — ${todayDiapers.length} au total</h3>
-      <table><tr><th>Heure</th><th>Type</th><th>Note</th></tr>
-      ${todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return `<tr><td>${fmtTime(d.time)}</td><td>${d.type}${details ? ` · ${details}` : ""}</td><td>${d.note || "—"}</td></tr>`; }).join("")}
-      </table>`;
-    }
-    if (todaySleep.length > 0) {
-      sections += `<h3>😴 Sommeil</h3>
-      <table><tr><th>Début</th><th>Fin</th><th>Durée</th><th>Type</th></tr>
-      ${todaySleep.map(s => `<tr><td>${fmtTime(s.start)}</td><td>${s.end ? fmtTime(s.end) : "En cours"}</td><td>${durStr(s)}</td><td>${s.type || "sieste"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayTemp.length > 0) {
-      sections += `<h3>🌡️ Températures</h3>
-      <table><tr><th>Heure</th><th>Valeur</th><th>Note</th></tr>
-      ${todayTemp.map(t => `<tr><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note || "—"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayMeds.length > 0) {
-      sections += `<h3>💊 Médicaments</h3>
-      <table><tr><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>
-      ${todayMeds.map(m => `<tr><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose || "—"}</td><td>${m.note || "—"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayBaths.length > 0) {
-      sections += `<h3>🛁 Bains</h3>
-      <table><tr><th>Heure</th><th>Température eau</th><th>Note</th></tr>
-      ${todayBaths.map(b => `<tr><td>${fmtTime(b.time)}</td><td>${b.temp}°C</td><td>${b.note || "—"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayVax.length > 0) {
-      sections += `<h3>💉 Vaccins réalisés aujourd'hui</h3>
-      <table><tr><th>Vaccin</th><th>Âge prévu</th></tr>
-      ${todayVax.map(v => `<tr><td><b>${v.name}</b></td><td>${v.age}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayFoods.length > 0) {
-      sections += `<h3>🥕 Aliments introduits aujourd'hui</h3>
-      <table><tr><th>Aliment</th><th>Réaction</th></tr>
-      ${todayFoods.map(([name, v]) => `<tr><td><b>${name}</b></td><td>${v.reaction || "ok"}</td></tr>`).join("")}
-      </table>`;
-    }
-    if (todayNotes.length > 0) {
-      sections += `<h3>📝 Notes du jour</h3>
-      ${todayNotes.map(n => `<blockquote>${n.mood} ${n.text}</blockquote>`).join("")}`;
-    }
-    if (!sections) sections = `<p class="empty">Aucune donnée enregistrée aujourd'hui.</p>`;
-
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Rapport ${todayFmt} — ${data.baby.name}</title>
-<style>body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:750px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.subtitle{color:#6B7280;margin-bottom:24px;font-size:13px}h3{color:#374151;margin:20px 0 8px;font-size:15px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}.empty{color:#9CA3AF;font-style:italic}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}</style>
-</head><body>
-<h1>Rapport journalier — ${data.baby.name} 👶</h1>
-<p class="subtitle">${todayFmt}</p>
-${sections}
-<footer>Généré par Baby Tracker</footer>
-</body></html>`;
-
+  const downloadBlob = (html, filename) => {
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `carnet-sante-${data.baby.name || "bebe"}-${todayStr()}.html`;
-    document.body.appendChild(a);
-    a.click();
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert("📄 Rapport téléchargé ! Ouvrez-le dans Safari/Chrome puis utilisez Partager → Imprimer pour générer le PDF.");
   };
 
-  const printReport = () => {
+  const durStr = (s) => { if (!s.end) return "En cours"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
+  const durMin = (s) => s.end ? Math.round((new Date(s.end) - new Date(s.start)) / 60000) : 0;
+  const fmtMin = (m) => m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m}min`;
+
+  const exportDayReport = () => {
+    const dayBottles = (data.bottles||[]).filter(b=>(b.time||"").startsWith(today)).sort((a,b)=>a.time.localeCompare(b.time));
+    const dayDiapers = (data.diapers||[]).filter(d=>(d.time||"").startsWith(today)).sort((a,b)=>a.time.localeCompare(b.time));
+    const daySleep   = sleepForDay(data.sleep, today).sort((a,b)=>a.start.localeCompare(b.start));
+    const dayMeds    = (data.medicines||[]).filter(m=>(m.time||"").startsWith(today)).sort((a,b)=>a.time.localeCompare(b.time));
+    const dayTemp    = (data.temperature||[]).filter(t=>(t.time||"").startsWith(today)).sort((a,b)=>a.time.localeCompare(b.time));
+    const dayBaths   = (data.baths||[]).filter(b=>(b.time||"").startsWith(today)).sort((a,b)=>a.time.localeCompare(b.time));
+    const dayNotes   = (data.notes||[]).filter(n=>(n.date||"").startsWith(today));
+    const dayGrowth  = (data.growth||[]).filter(g=>g.date===today);
+    const dayBooks   = (data.books||[]).filter(b=>(b.date||"").startsWith(today));
+    const dayVax     = VACCINE_SCHEDULE.flatMap((p,pi)=>p.vaccines.map((v,vi)=>({name:v,age:p.age,key:`${pi}-${vi}`}))).filter(v=>data.vaccines?.[v.key]===today);
+    const dayFoods   = Object.entries(data.foods||{}).filter(([,v])=>v?.date===today);
+    const todayChecks = data.exercises?.[today] || {};
+    const dayExercises = Object.keys(todayChecks).filter(k=>todayChecks[k]);
+
     let sections = "";
-    if (todayBottles.length > 0) {
-      const total = todayBottles.reduce((s, b) => s + (b.amount || 0), 0);
-      sections += `<h3>🍼 Biberons — ${todayBottles.length} repas · ${total} ml au total</h3>
-      <table><tr><th>Heure</th><th>Quantité</th><th>Note</th></tr>
-      ${todayBottles.map(b => `<tr><td>${fmtTime(b.time)}</td><td><b>${b.amount} ml</b></td><td>${b.note || "—"}</td></tr>`).join("")}
-      </table>`;
+    if (dayBottles.length > 0) {
+      const total = dayBottles.reduce((s,b)=>s+(b.amount||0),0);
+      sections += `<h2>🍼 Biberons (${dayBottles.length} repas · ${total} ml)</h2><table><tr><th>Heure</th><th>Quantité</th><th>Contenu</th><th>Note</th></tr>${dayBottles.map(b=>`<tr><td>${fmtTime(b.time)}</td><td><b>${b.amount} ml</b></td><td>${b.content||"—"}</td><td>${b.note||"—"}</td></tr>`).join("")}</table>`;
     }
-    if (todayDiapers.length > 0) {
-      sections += `<h3>🧷 Couches — ${todayDiapers.length} au total</h3>
-      <table><tr><th>Heure</th><th>Type</th><th>Note</th></tr>
-      ${todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return `<tr><td>${fmtTime(d.time)}</td><td>${d.type}${details ? ` · ${details}` : ""}</td><td>${d.note || "—"}</td></tr>`; }).join("")}
-      </table>`;
+    if (dayDiapers.length > 0) {
+      sections += `<h2>🧷 Couches (${dayDiapers.length})</h2><table><tr><th>Heure</th><th>Type</th><th>Détail</th><th>Note</th></tr>${dayDiapers.map(d=>{const det=[d.quantity,d.consistency,d.color].filter(Boolean).join(" · ");return`<tr><td>${fmtTime(d.time)}</td><td>${d.type}</td><td>${det||"—"}</td><td>${d.note||"—"}</td></tr>`}).join("")}</table>`;
     }
-    if (todaySleep.length > 0) {
-      sections += `<h3>😴 Sommeil</h3>
-      <table><tr><th>Début</th><th>Fin</th><th>Durée</th><th>Type</th></tr>
-      ${todaySleep.map(s => `<tr><td>${fmtTime(s.start)}</td><td>${s.end ? fmtTime(s.end) : "En cours"}</td><td>${durStr(s)}</td><td>${s.type || "sieste"}</td></tr>`).join("")}
-      </table>`;
+    if (daySleep.length > 0) {
+      const total = daySleep.filter(s=>s.end).reduce((s,x)=>s+durMin(x),0);
+      sections += `<h2>😴 Sommeil (${daySleep.length}${total>0?" · total "+fmtMin(total):""})</h2><table><tr><th>Type</th><th>Début</th><th>Fin</th><th>Durée</th><th>Note</th></tr>${daySleep.map(s=>`<tr><td>${s.type||"sieste"}</td><td>${fmtTime(s.start)}</td><td>${s.end?fmtTime(s.end):"En cours"}</td><td>${durStr(s)}</td><td>${s.note||"—"}</td></tr>`).join("")}</table>`;
     }
-    if (todayTemp.length > 0) {
-      sections += `<h3>🌡️ Températures</h3>
-      <table><tr><th>Heure</th><th>Valeur</th><th>Note</th></tr>
-      ${todayTemp.map(t => `<tr><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note || "—"}</td></tr>`).join("")}
-      </table>`;
+    if (dayMeds.length > 0) {
+      sections += `<h2>💊 Médicaments</h2><table><tr><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>${dayMeds.map(m=>`<tr><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose||"—"}</td><td>${m.note||"—"}</td></tr>`).join("")}</table>`;
     }
-    if (todayMeds.length > 0) {
-      sections += `<h3>💊 Médicaments</h3>
-      <table><tr><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>
-      ${todayMeds.map(m => `<tr><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose || "—"}</td><td>${m.note || "—"}</td></tr>`).join("")}
-      </table>`;
+    if (dayTemp.length > 0) {
+      sections += `<h2>🌡️ Températures</h2><table><tr><th>Heure</th><th>Valeur</th><th>Note</th></tr>${dayTemp.map(t=>`<tr><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note||"—"}</td></tr>`).join("")}</table>`;
     }
-    if (todayBaths.length > 0) {
-      sections += `<h3>🛁 Bains</h3>
-      <table><tr><th>Heure</th><th>Température eau</th><th>Note</th></tr>
-      ${todayBaths.map(b => `<tr><td>${fmtTime(b.time)}</td><td>${b.temp}°C</td><td>${b.note || "—"}</td></tr>`).join("")}
-      </table>`;
+    if (dayBaths.length > 0) {
+      sections += `<h2>🛁 Bains</h2><table><tr><th>Heure</th><th>Temp. eau</th><th>Note</th></tr>${dayBaths.map(b=>`<tr><td>${fmtTime(b.time)}</td><td>${b.temp||"—"}°C</td><td>${b.note||"—"}</td></tr>`).join("")}</table>`;
     }
-    if (todayVax.length > 0) {
-      sections += `<h3>💉 Vaccins réalisés aujourd'hui</h3>
-      <table><tr><th>Vaccin</th><th>Âge prévu</th></tr>
-      ${todayVax.map(v => `<tr><td><b>${v.name}</b></td><td>${v.age}</td></tr>`).join("")}
-      </table>`;
+    if (dayVax.length > 0) {
+      sections += `<h2>💉 Vaccins</h2>${dayVax.map(v=>`<div class="tag">✓ ${v.name} (${v.age})</div>`).join("")}`;
     }
-    if (todayFoods.length > 0) {
-      sections += `<h3>🥕 Aliments introduits aujourd'hui</h3>
-      <table><tr><th>Aliment</th><th>Réaction</th></tr>
-      ${todayFoods.map(([name, v]) => `<tr><td><b>${name}</b></td><td>${v.reaction || "ok"}</td></tr>`).join("")}
-      </table>`;
+    if (dayFoods.length > 0) {
+      sections += `<h2>🥕 Aliments introduits</h2>${dayFoods.map(([name,v])=>`<div class="tag">${name} — ${v.reaction||"ok"}</div>`).join("")}`;
     }
-    if (todayNotes.length > 0) {
-      sections += `<h3>📝 Notes du jour</h3>
-      ${todayNotes.map(n => `<blockquote>${n.mood} ${n.text}</blockquote>`).join("")}`;
+    if (dayGrowth.length > 0) {
+      sections += `<h2>📏 Croissance</h2>${dayGrowth.map(g=>`<div class="tag">${g.weight?`⚖️ ${g.weight}kg `:""}${g.height?`📏 ${g.height}cm `:""}${g.head?`🧠 ${g.head}cm`:""}</div>`).join("")}`;
     }
-    if (!sections) sections = `<p class="empty">Aucune donnée enregistrée aujourd'hui.</p>`;
+    if (dayBooks.length > 0) {
+      sections += `<h2>📖 Livres</h2>${dayBooks.map(b=>`<div class="tag">${b.title} ${"⭐".repeat(b.interest||0)}</div>`).join("")}`;
+    }
+    if (dayExercises.length > 0) {
+      sections += `<h2>🧘 Éveil & Exercices</h2>${dayExercises.map(e=>`<div class="tag">✓ ${e}</div>`).join("")}`;
+    }
+    if (dayNotes.length > 0) {
+      sections += `<h2>📝 Notes</h2>${dayNotes.map(n=>`<blockquote>${n.mood||""} ${n.text||""}</blockquote>`).join("")}`;
+    }
+    if (!sections) { alert("Aucune donnée enregistrée aujourd'hui !"); return; }
 
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Rapport ${todayFmt} — ${data.baby.name}</title>
-<style>body{font-family:Arial,sans-serif;padding:24px;color:#333;max-width:750px;margin:0 auto;font-size:14px}h1{color:#7C3AED;border-bottom:2px solid #C4B5FD;padding-bottom:10px;margin-bottom:4px;font-size:22px}.subtitle{color:#6B7280;margin-bottom:24px;font-size:13px}h3{color:#374151;margin:20px 0 8px;font-size:15px}table{width:100%;border-collapse:collapse;margin-bottom:4px}th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #F3F4F6;font-size:13px}th{background:#F9FAFB;font-weight:700;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px}blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid #C4B5FD;background:#F5F3FF;border-radius:0 8px 8px 0}.empty{color:#9CA3AF;font-style:italic}footer{margin-top:40px;font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:12px;text-align:center}@media print{body{padding:0}}</style>
-</head><body>
-<h1>Rapport journalier — ${data.baby.name} 👶</h1>
-<p class="subtitle">${todayFmt}</p>
-${sections}
-<footer>Généré par Baby Tracker</footer>
-</body></html>`;
-
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:-9999px;width:0;height:0;border:none;";
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open(); doc.write(html); doc.close();
-    setTimeout(() => {
-      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
-      catch(e) { alert("Impression non disponible. Utilisez le bouton Télécharger."); }
-      setTimeout(() => { if (document.body.contains(iframe)) document.body.removeChild(iframe); }, 1000);
-    }, 500);
+    const todayFmt = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport du jour — ${data.baby.name}</title><style>${CSS}</style></head><body><h1>📋 Rapport du jour — ${data.baby.name}</h1><p class="sub"><strong>${todayFmt}</strong>${age?` · ${age}`:""}</p>${sections}<footer>Généré le ${new Date().toLocaleDateString("fr-FR")} — Baby Tracker</footer></body></html>`;
+    downloadBlob(html, `rapport-${data.baby.name||"bebe"}-${today}.html`);
   };
 
-  const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+  const exportWeekReport = () => {
+    const pad = n => String(n).padStart(2,"0");
+    const days = Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;});
+
+    const weekStart = days[0], weekEnd = days[6];
+    const inWeek = (ts) => ts && ts.slice(0,10) >= weekStart && ts.slice(0,10) <= weekEnd;
+
+    const weekBottles = (data.bottles||[]).filter(b=>inWeek(b.time));
+    const weekDiapers = (data.diapers||[]).filter(d=>inWeek(d.time));
+    const weekSleep   = (data.sleep||[]).filter(s=>inWeek(s.start));
+    const weekMeds    = (data.medicines||[]).filter(m=>inWeek(m.time));
+    const weekTemp    = (data.temperature||[]).filter(t=>inWeek(t.time));
+    const weekBaths   = (data.baths||[]).filter(b=>inWeek(b.time));
+    const weekNotes   = (data.notes||[]).filter(n=>inWeek(n.date));
+    const weekGrowth  = (data.growth||[]).filter(g=>inWeek(g.date));
+    const weekBooks   = (data.books||[]).filter(b=>inWeek(b.date));
+
+    const anyData = weekBottles.length + weekDiapers.length + weekSleep.length + weekMeds.length + weekTemp.length + weekBaths.length + weekNotes.length + weekGrowth.length + weekBooks.length > 0;
+    if (!anyData) { alert("Aucune donnée enregistrée cette semaine !"); return; }
+
+    const summaryRows = days.map(d => {
+      const bs = weekBottles.filter(b=>(b.time||"").startsWith(d));
+      const ds = weekDiapers.filter(x=>(x.time||"").startsWith(d));
+      const ss = weekSleep.filter(s=>(s.start||"").startsWith(d));
+      const totalMl = bs.reduce((s,b)=>s+(b.amount||0),0);
+      const totalSleep = ss.filter(s=>s.end).reduce((s,x)=>s+durMin(x),0);
+      const label = new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+      return {d,label,bottles:bs.length,ml:totalMl,diapers:ds.length,sleep:ss.length,sleepMin:totalSleep};
+    });
+
+    let sections = `<h2>📅 Résumé jour par jour</h2><table><tr><th>Jour</th><th>🍼</th><th>ml</th><th>🧷</th><th>😴</th><th>Sommeil total</th></tr>${summaryRows.map(r=>`<tr><td>${r.label}</td><td>${r.bottles||"—"}</td><td>${r.ml?r.ml+"ml":"—"}</td><td>${r.diapers||"—"}</td><td>${r.sleep||"—"}</td><td>${r.sleepMin?fmtMin(r.sleepMin):"—"}</td></tr>`).join("")}</table>`;
+
+    if (weekBottles.length > 0) {
+      const total = weekBottles.reduce((s,b)=>s+(b.amount||0),0);
+      sections += `<h2>🍼 Biberons (${weekBottles.length} · ${total} ml · moy. ${Math.round(total/7)} ml/j)</h2><table><tr><th>Jour</th><th>Heure</th><th>Quantité</th><th>Note</th></tr>${weekBottles.sort((a,b)=>a.time.localeCompare(b.time)).map(b=>`<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td><b>${b.amount}ml</b></td><td>${b.note||"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekDiapers.length > 0) {
+      const pipi=weekDiapers.filter(d=>d.type==="pipi").length, caca=weekDiapers.filter(d=>d.type==="caca").length, mixte=weekDiapers.filter(d=>d.type==="mixte").length;
+      sections += `<h2>🧷 Couches (${weekDiapers.length} · Pipi:${pipi} / Caca:${caca} / Mixte:${mixte})</h2><table><tr><th>Jour</th><th>Heure</th><th>Type</th><th>Détail</th></tr>${weekDiapers.sort((a,b)=>a.time.localeCompare(b.time)).map(d=>{const det=[d.quantity,d.consistency,d.color].filter(Boolean).join(" · ");return`<tr><td>${new Date(d.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(d.time)}</td><td>${d.type}</td><td>${det||"—"}</td></tr>`}).join("")}</table>`;
+    }
+    if (weekSleep.length > 0) {
+      const total = weekSleep.filter(s=>s.end).reduce((s,x)=>s+durMin(x),0);
+      sections += `<h2>😴 Sommeil (${weekSleep.length} · total ${fmtMin(total)})</h2><table><tr><th>Jour</th><th>Type</th><th>Début</th><th>Fin</th><th>Durée</th></tr>${weekSleep.sort((a,b)=>a.start.localeCompare(b.start)).map(s=>`<tr><td>${new Date(s.start).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${s.type||"sieste"}</td><td>${fmtTime(s.start)}</td><td>${s.end?fmtTime(s.end):"En cours"}</td><td>${s.end?fmtMin(durMin(s)):"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekMeds.length > 0) {
+      sections += `<h2>💊 Médicaments</h2><table><tr><th>Jour</th><th>Heure</th><th>Médicament</th><th>Dosage</th><th>Note</th></tr>${weekMeds.sort((a,b)=>a.time.localeCompare(b.time)).map(m=>`<tr><td>${new Date(m.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(m.time)}</td><td><b>${m.name}</b></td><td>${m.dose||"—"}</td><td>${m.note||"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekTemp.length > 0) {
+      sections += `<h2>🌡️ Températures</h2><table><tr><th>Jour</th><th>Heure</th><th>Valeur</th><th>Note</th></tr>${weekTemp.sort((a,b)=>a.time.localeCompare(b.time)).map(t=>`<tr><td>${new Date(t.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(t.time)}</td><td><b>${t.value}°C</b></td><td>${t.note||"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekBaths.length > 0) {
+      sections += `<h2>🛁 Bains</h2><table><tr><th>Jour</th><th>Heure</th><th>Temp. eau</th><th>Note</th></tr>${weekBaths.sort((a,b)=>a.time.localeCompare(b.time)).map(b=>`<tr><td>${new Date(b.time).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"})}</td><td>${fmtTime(b.time)}</td><td>${b.temp||"—"}°C</td><td>${b.note||"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekGrowth.length > 0) {
+      sections += `<h2>📏 Croissance</h2><table><tr><th>Date</th><th>Poids</th><th>Taille</th><th>Tour de tête</th></tr>${weekGrowth.sort((a,b)=>a.date.localeCompare(b.date)).map(g=>`<tr><td>${fmtFull(g.date)}</td><td>${g.weight?g.weight+" kg":"—"}</td><td>${g.height?g.height+" cm":"—"}</td><td>${g.head?g.head+" cm":"—"}</td></tr>`).join("")}</table>`;
+    }
+    if (weekBooks.length > 0) {
+      sections += `<h2>📖 Livres</h2>${weekBooks.map(b=>`<div class="tag">${b.title} ${"⭐".repeat(b.interest||0)}</div>`).join("")}`;
+    }
+    if (weekNotes.length > 0) {
+      sections += `<h2>📝 Notes</h2>${weekNotes.sort((a,b)=>a.date.localeCompare(b.date)).map(n=>`<blockquote><b>${new Date((n.date||"")+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</b><br>${n.mood||""} ${n.text||""}</blockquote>`).join("")}`;
+    }
+
+    const weekStartFmt = new Date(weekStart+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+    const weekEndFmt   = new Date(weekEnd+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport hebdomadaire — ${data.baby.name}</title><style>${CSS}</style></head><body><h1>📊 Rapport hebdomadaire — ${data.baby.name}</h1><p class="sub">${weekStartFmt} – ${weekEndFmt}${age?` · ${age}`:""}</p>${sections}<footer>Généré le ${new Date().toLocaleDateString("fr-FR")} — Baby Tracker</footer></body></html>`;
+    downloadBlob(html, `rapport-semaine-${data.baby.name||"bebe"}-${weekStart}.html`);
+  };
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>📄 Rapport du jour</div>
-        {hasData && <Btn onClick={exportPDF} small>📥 Télécharger</Btn>}
-      </div>
-      <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600, marginBottom: 16 }}>
-        {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-      </div>
-
-      {!hasData && <EmptyState emoji="📋" text="Aucune donnée enregistrée aujourd'hui" />}
-
-      {todayBottles.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🍼 Biberons — {todayBottles.reduce((s,b) => s+(b.amount||0), 0)} ml en {todayBottles.length} repas</div>
-          {todayBottles.map(b => <div key={b.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(b.time)} — {b.amount} ml{b.note ? ` (${b.note})` : ""}</div>)}
-        </Card>
-      )}
-      {todayDiapers.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🧷 Couches — {todayDiapers.length}</div>
-          {todayDiapers.map(d => { const details = [d.quantity, d.consistency, d.color].filter(Boolean).join(" · "); return <div key={d.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(d.time)} — {d.type}{details ? ` · ${details}` : ""}{d.note ? ` (${d.note})` : ""}</div>; })}
-        </Card>
-      )}
-      {todaySleep.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>😴 Sommeil</div>
-          {todaySleep.map(s => <div key={s.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(s.start)}{s.end ? ` → ${fmtTime(s.end)} (${durStr(s)})` : " (en cours)"}</div>)}
-        </Card>
-      )}
-      {todayTemp.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🌡️ Températures</div>
-          {todayTemp.map(t => <div key={t.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(t.time)} — {t.value}°C{t.note ? ` (${t.note})` : ""}</div>)}
-        </Card>
-      )}
-      {todayMeds.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>💊 Médicaments</div>
-          {todayMeds.map(m => <div key={m.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(m.time)} — {m.name}{m.dose ? ` (${m.dose})` : ""}</div>)}
-        </Card>
-      )}
-      {todayBaths.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🛁 Bains</div>
-          {todayBaths.map(b => <div key={b.id} style={{ fontSize: 12, color: "#6B7280" }}>• {fmtTime(b.time)} — {b.temp}°C{b.note ? ` (${b.note})` : ""}</div>)}
-        </Card>
-      )}
-      {todayVax.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>💉 Vaccins</div>
-          {todayVax.map(v => <div key={v.key} style={{ fontSize: 12, color: "#6B7280" }}>• {v.name} ({v.age})</div>)}
-        </Card>
-      )}
-      {todayFoods.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>🥕 Aliments introduits</div>
-          {todayFoods.map(([name, v]) => <div key={name} style={{ fontSize: 12, color: "#6B7280" }}>• {name} — {v.reaction || "ok"}</div>)}
-        </Card>
-      )}
-      {todayNotes.length > 0 && (
-        <Card style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>📝 Notes</div>
-          {todayNotes.map(n => <div key={n.id} style={{ fontSize: 12, color: "#6B7280" }}>• {n.mood} {n.text.length > 120 ? n.text.slice(0, 120) + "…" : n.text}</div>)}
-        </Card>
-      )}
-
-      {hasData && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-          <Btn onClick={exportPDF} full>📥 Télécharger le carnet de santé</Btn>
-          {!isPWA && <Btn onClick={printReport} full>🖨️ Imprimer directement</Btn>}
+      <div style={{ fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 20 }}>📄 Rapports</div>
+      <Card onClick={exportDayReport} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+        <span style={{ fontSize: 28 }}>📄</span>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>Rapport du jour</div>
+          <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>Toutes les entrées d'aujourd'hui</div>
         </div>
-      )}
-
-      <div style={{ marginTop: 20, borderTop: "1.5px solid #F3F4F6", paddingTop: 18 }}>
-        <Card onClick={() => setWeekModal(true)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 28 }}>📊</span>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>Export hebdomadaire</div>
-            <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>Compte rendu détaillé d'une semaine</div>
-          </div>
-        </Card>
-      </div>
-
-      <Modal open={weekModal} onClose={() => setWeekModal(false)} title="Export hebdomadaire">
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 10 }}>Sélectionner la semaine</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-          {weeks.map((w, i) => (
-            <button key={i} onClick={() => setSelectedWeekIdx(i)} style={{ padding: "10px 14px", borderRadius: 12, border: `2px solid ${selectedWeekIdx === i ? "#7C3AED" : "#E5E7EB"}`, background: selectedWeekIdx === i ? "#EDE9FE" : "#fff", textAlign: "left", cursor: "pointer", fontWeight: 700, fontSize: 13, color: selectedWeekIdx === i ? "#7C3AED" : "#374151" }}>
-              {i === 0 ? "Cette semaine" : i === 1 ? "Semaine dernière" : `Il y a ${i} semaines`} — {w.label}
-            </button>
-          ))}
+      </Card>
+      <Card onClick={exportWeekReport} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+        <span style={{ fontSize: 28 }}>📊</span>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>Rapport hebdomadaire</div>
+          <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>Les 7 derniers jours</div>
         </div>
-        <Btn onClick={exportWeeklyPDF} full>📊 Générer le rapport</Btn>
-      </Modal>
+      </Card>
+      <div style={{ fontSize: 11, color: theme.textMuted, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
+        📱 Le rapport se télécharge en HTML.<br/>
+        Ouvrez-le dans Safari/Chrome → Partager → Imprimer pour le convertir en PDF.
+      </div>
     </div>
   );
 };
