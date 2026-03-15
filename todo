@@ -1,0 +1,47 @@
+Refactorise le fichier `App.js` pour le diviser en une architecture modulaire et maintenable. Procède étape par étape pour ne rien casser :
+
+1. Extraction des constantes (`src/constants.js`) :
+   - Déplace toutes les données statiques : `OMS_WEIGHT_*`, `OMS_HEIGHT_*`, `DEFAULT_MILESTONES`, `TEETH_MAP`, `FOOD_CATEGORIES`, `CAT_COLORS`, `VACCINE_SCHEDULE`, `PROFILE_AVATARS`, et `PROFILE_COLORS`.
+
+2. Extraction du Thème et de l'UI (`src/components/ui/`) :
+   - Crée un fichier `Theme.js` pour `ThemeCtx`, `useTheme`, `LIGHT`, `DARK`, et `makeCSS`.
+   - Crée des fichiers séparés (ou un index commun) pour les composants réutilisables : `Modal`, `Input`, `Btn`, `Chip`, `Card`, `IconBtn`, `SyncBadge`, et `Empty`.
+
+3. Extraction des sections (`src/components/sections/`) :
+   - Déplace chaque composant de section dans son propre fichier (ex: `DashboardHome.js`, `BottlesSection.js`, `DiapersSection.js`, etc.).
+
+4. Extraction du sélecteur de profil (`src/components/ProfileSelector.js`) :
+   - Déplace le composant `ProfileSelector`.
+
+5. Nettoyage de `App.js` :
+   - Ce fichier ne doit conserver que la fonction principale `App()`, la gestion des états (`useState`, `useEffect` liés à Firebase), le `ThemeCtx.Provider` et le rendu conditionnel (le mapping `SECTIONS`).
+   - Assure-toi d'ajouter tous les imports/exports nécessaires entre ces nouveaux fichiers.
+
+
+
+   --------------------------------------------------------------
+
+
+
+   Modifie le composant `DashboardHome` dans le fichier `App.js` pour améliorer l'UI/UX selon ces directives :
+
+1. Nettoyage de l'en-tête (Hero banner) :
+   - Supprime toute référence au badge visuel "Connecté".
+   - Aligne proprement le bouton "Changer ↩" et l'icône de bascule du mode sombre pour éviter les chevauchements. Assure-toi qu'ils utilisent un `display: flex` avec un `gap` adéquat.
+
+2. Catégorisation des cartes d'action :
+   - Divise le tableau `cards` actuel (qui contient 14 éléments) en trois listes distinctes.
+   - Affiche ces trois listes sous forme de trois sections séparées, précédées chacune d'un sous-titre discret (par exemple : `fontSize: 12`, `fontWeight: 800`, `color: t.textSoft`, `textTransform: "uppercase"`, `letterSpacing: 1`, `marginTop: 24`, `marginBottom: 12`).
+   - Les trois sections sont :
+     * **Quotidien** : Biberons, Couches, Sommeil, Diversification, Bains.
+     * **Santé** : Croissance, Dents, Température, Médicaments, Vaccins, RDV.
+     * **Souvenirs & Réglages** : Étapes, Notes, Paramètres.
+   - Applique le style de grille existant (`display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10`) à chacune de ces trois nouvelles sections.
+   - Conserve strictement l'utilisation du composant `<Card>` existant et la syntaxe des styles inline actuels.
+
+
+
+   --------------------------------------------
+
+
+
