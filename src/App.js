@@ -1516,43 +1516,154 @@ const FoodSection = ({ data, update }) => {
   );
 };
 
+// ─── OMS / WHO Growth data ───
+// Calcul exact de l'âge en mois à la date de mesure
+const measureMonth = (birthDate, measureDate) => {
+  const b = new Date(birthDate), m = new Date(measureDate);
+  return (m.getFullYear() - b.getFullYear()) * 12 + m.getMonth() - b.getMonth()
+    + (m.getDate() - b.getDate()) / 30;
+};
+
+// Poids OMS [P3, P50, P97] en kg, mois 0–24, garçon / fille
+const OMS_WEIGHT = {
+  boy: [
+    [2.5,3.3,4.3],[3.4,4.5,5.7],[4.3,5.6,6.9],[5.0,6.4,7.9],[5.6,7.0,8.6],
+    [6.0,7.5,9.3],[6.4,7.9,9.7],[6.7,8.3,10.2],[6.9,8.6,10.5],[7.1,8.9,10.9],
+    [7.4,9.2,11.2],[7.6,9.4,11.5],[7.7,9.6,11.8],[7.9,9.9,12.1],[8.1,10.1,12.4],
+    [8.3,10.3,12.6],[8.4,10.5,12.9],[8.6,10.7,13.2],[8.8,10.9,13.5],[8.9,11.1,13.7],
+    [9.1,11.3,14.0],[9.2,11.5,14.3],[9.4,11.8,14.6],[9.5,12.0,14.9],[9.7,12.2,15.2],
+  ],
+  girl: [
+    [2.4,3.2,4.2],[3.2,4.2,5.5],[3.9,5.1,6.6],[4.5,5.8,7.5],[5.0,6.4,8.2],
+    [5.4,6.9,8.8],[5.7,7.3,9.3],[6.0,7.6,9.7],[6.3,7.9,10.1],[6.5,8.2,10.4],
+    [6.7,8.5,10.8],[6.9,8.7,11.1],[7.0,8.9,11.5],[7.2,9.2,11.8],[7.4,9.4,12.1],
+    [7.6,9.6,12.4],[7.7,9.8,12.6],[7.9,10.0,12.9],[8.1,10.2,13.2],[8.2,10.4,13.5],
+    [8.4,10.6,13.7],[8.6,10.9,14.0],[8.7,11.1,14.3],[8.9,11.3,14.6],[9.0,11.5,14.8],
+  ],
+};
+
 // ─── SECTION: Growth ───
 const GrowthSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
   const [head, setHead] = useState("");
   const [date, setDate] = useState(todayStr());
-  const add = () => { update(d => { d.growth.push({ id: uid(), date, weight: Number(weight) || null, height: Number(height) || null, head: Number(head) || null }); }); setModal(false); setWeight(""); setHeight(""); setHead(""); };
+
+  const add = () => {
+    update(d => { d.growth.push({ id: uid(), date, weight: Number(weight) || null, height: Number(height) || null, head: Number(head) || null }); });
+    setModal(false); setWeight(""); setHeight(""); setHead("");
+  };
   const remove = (id) => update(d => { d.growth = d.growth.filter(x => x.id !== id); });
   const sorted = [...(data.growth||[])].sort((a, b) => b.date.localeCompare(a.date));
-  const chartData = [...(data.growth||[])].sort((a, b) => a.date.localeCompare(b.date));
-  const maxW = Math.max(...chartData.map(g => g.weight || 0), 1);
+
+  const birthDate = data.baby?.birthDate || null;
+  const gender = data.baby?.gender === "girl" ? "girl" : "boy";
+  const omsData = OMS_WEIGHT[gender]; // 25 rows: months 0–24
+
+  // Points bébé projetés sur l'axe des mois OMS
+  const babyPoints = birthDate
+    ? (data.growth||[])
+        .filter(g => g.weight != null)
+        .map(g => ({ month: measureMonth(birthDate, g.date), weight: g.weight, date: g.date }))
+        .filter(p => p.month >= 0 && p.month <= 24)
+        .sort((a, b) => a.month - b.month)
+    : [];
+
+  // SVG layout
+  const W = 320, H = 175;
+  const ML = 28, MR = 8, MT = 10, MB = 22;
+  const cW = W - ML - MR, cH = H - MT - MB;
+  const minKg = 1, maxKg = 16;
+  const xM  = (m)  => ML + (m / 24) * cW;
+  const yKg = (kg) => MT + cH - ((kg - minKg) / (maxKg - minKg)) * cH;
+
+  const omsPolyline = (pIdx) => omsData.map((row, m) => `${xM(m)},${yKg(row[pIdx])}`).join(" ");
+  const omsAreaPts  = () => [
+    ...omsData.map((row, m) => `${xM(m)},${yKg(row[2])}`),
+    ...[...omsData].reverse().map((row, i) => `${xM(24 - i)},${yKg(row[0])}`),
+  ].join(" ");
+
+  const babyPolyline = babyPoints.map(p => `${xM(p.month)},${yKg(p.weight)}`).join(" ");
+
+  const xTicks = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+  const yTicks = [2, 4, 6, 8, 10, 12, 14];
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>📏 Croissance</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>📏 Croissance</div>
         <Btn onClick={() => { setDate(todayStr()); setModal(true); }} small>+ Mesure</Btn>
       </div>
 
-      {chartData.length >= 2 && (
-        <Card style={{ marginBottom: 16, padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>📈 Courbe de poids</div>
-          <svg viewBox={`0 0 ${Math.max(chartData.length * 60, 200)} 110`} style={{ width: "100%", height: 90 }}>
-            <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#A78BFA" stopOpacity="0.3"/><stop offset="100%" stopColor="#A78BFA" stopOpacity="0"/></linearGradient></defs>
-            <polygon points={`${25},100 ${chartData.map((g, i) => `${i * 60 + 25},${95 - ((g.weight || 0) / maxW) * 75}`).join(" ")} ${(chartData.length - 1) * 60 + 25},100`} fill="url(#wg)" />
-            <polyline points={chartData.map((g, i) => `${i * 60 + 25},${95 - ((g.weight || 0) / maxW) * 75}`).join(" ")} fill="none" stroke="#A78BFA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {chartData.map((g, i) => (<g key={i}><circle cx={i * 60 + 25} cy={95 - ((g.weight || 0) / maxW) * 75} r="4" fill="#fff" stroke="#A78BFA" strokeWidth="2.5" /><text x={i * 60 + 25} y={95 - ((g.weight || 0) / maxW) * 75 - 10} textAnchor="middle" fontSize="9" fill="#7C3AED" fontWeight="700">{g.weight}kg</text><text x={i * 60 + 25} y={108} textAnchor="middle" fontSize="7" fill="#9CA3AF">{fmt(g.date)}</text></g>))}
-          </svg>
-        </Card>
-      )}
+      {/* Courbe OMS */}
+      <Card style={{ marginBottom: 16, padding: "14px 12px 8px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 6 }}>
+          📈 Poids vs OMS ({gender === "girl" ? "Fille" : "Garçon"})
+          <span style={{ fontWeight: 500, marginLeft: 6 }}>— P3 · P50 · P97</span>
+        </div>
+        {!birthDate ? (
+          <div style={{ fontSize: 12, color: theme.textMuted, fontStyle: "italic", padding: "16px 0", textAlign: "center" }}>
+            Date de naissance manquante
+          </div>
+        ) : (
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", overflow: "visible" }}>
+            {/* Zone P3–P97 */}
+            <polygon points={omsAreaPts()} fill="#EDE9FE" opacity="0.45" />
+            {/* P3 */}
+            <polyline points={omsPolyline(0)} fill="none" stroke="#C4B5FD" strokeWidth="1.2" strokeDasharray="4,3" />
+            {/* P50 */}
+            <polyline points={omsPolyline(1)} fill="none" stroke="#7C3AED" strokeWidth="2" />
+            {/* P97 */}
+            <polyline points={omsPolyline(2)} fill="none" stroke="#C4B5FD" strokeWidth="1.2" strokeDasharray="4,3" />
 
+            {/* Ligne bébé */}
+            {babyPoints.length >= 2 && (
+              <polyline points={babyPolyline} fill="none" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {/* Points bébé */}
+            {babyPoints.map((p, i) => (
+              <g key={i}>
+                <circle cx={xM(p.month)} cy={yKg(p.weight)} r="4.5" fill="#fff" stroke="#F97316" strokeWidth="2.5" />
+                <text x={xM(p.month)} y={Math.max(yKg(p.weight) - 7, MT + 8)} textAnchor="middle" fontSize="8" fill="#F97316" fontWeight="700">{p.weight}kg</text>
+              </g>
+            ))}
+
+            {/* Message si aucun point */}
+            {babyPoints.length === 0 && (
+              <text x={W / 2} y={H / 2 + 4} textAnchor="middle" fontSize="10" fill="#9CA3AF">
+                Ajoutez une première mesure pour voir les données bébé
+              </text>
+            )}
+
+            {/* Axes */}
+            <line x1={ML} y1={MT} x2={ML} y2={MT + cH} stroke={theme.border} strokeWidth="1" />
+            <line x1={ML} y1={MT + cH} x2={ML + cW} y2={MT + cH} stroke={theme.border} strokeWidth="1" />
+            {/* X ticks */}
+            {xTicks.map(m => (
+              <g key={m}>
+                <line x1={xM(m)} y1={MT + cH} x2={xM(m)} y2={MT + cH + 3} stroke="#D1D5DB" strokeWidth="1" />
+                <text x={xM(m)} y={H - 5} textAnchor="middle" fontSize="8" fill="#9CA3AF">{m}m</text>
+              </g>
+            ))}
+            {/* Y ticks */}
+            {yTicks.map(kg => (
+              <g key={kg}>
+                <line x1={ML - 3} y1={yKg(kg)} x2={ML} y2={yKg(kg)} stroke="#D1D5DB" strokeWidth="1" />
+                <text x={ML - 5} y={yKg(kg) + 3} textAnchor="end" fontSize="8" fill="#9CA3AF">{kg}</text>
+              </g>
+            ))}
+          </svg>
+        )}
+      </Card>
+
+      {sorted.length === 0 && <EmptyState emoji="📏" text="Aucune mesure — ajoutez la première !" />}
       {sorted.map(g => (
         <Card key={g.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>{fmtFull(g.date)}</div>
-            <div style={{ fontSize: 12, color: "#6B7280", display: "flex", gap: 12, marginTop: 4 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: theme.text }}>{fmtFull(g.date)}</div>
+            <div style={{ fontSize: 12, color: theme.textMuted, display: "flex", gap: 12, marginTop: 4 }}>
               {g.weight && <span>⚖️ {g.weight} kg</span>}
               {g.height && <span>📏 {g.height} cm</span>}
               {g.head && <span>🧠 {g.head} cm</span>}
