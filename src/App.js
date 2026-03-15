@@ -68,7 +68,6 @@ export default function App() {
 
   const handleCreateProfile = async (info) => {
     const id = await createProfile(info);
-    // Init data for this profile
     const initial = defaultState();
     initial._lastUpdated = new Date().toISOString();
     await saveData(id, initial);
@@ -88,16 +87,15 @@ export default function App() {
     if (!data || !activeProfileId || !("Notification" in window) || Notification.permission !== "granted") return;
     const profile = profiles[activeProfileId];
     if (!profile) return;
-    // Check upcoming appointments (today)
     const todayAppts = (data.appointments || []).filter(a => a.date === todayStr());
     todayAppts.forEach(a => {
       const now = new Date();
       const apptTime = new Date(`${a.date}T${a.time}`);
       const diff = apptTime - now;
-      if (diff > 0 && diff < 3600000) { // less than 1h away
+      if (diff > 0 && diff < 3600000) {
         setTimeout(() => {
           new Notification(`📅 RDV pour ${profile.name}`, { body: `${a.title || a.type} à ${a.time}${a.doctor ? ` — Dr. ${a.doctor}` : ""}` });
-        }, Math.max(diff - 900000, 0)); // 15min before
+        }, Math.max(diff - 900000, 0));
       }
     });
   }, [data, activeProfileId, profiles]);
@@ -110,7 +108,6 @@ export default function App() {
     </div>
   );
 
-  // Profile selector
   if (!activeProfileId) return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;font-family:'Nunito',sans-serif;-webkit-tap-highlight-color:transparent}`}</style>
@@ -157,11 +154,9 @@ export default function App() {
     <ThemeCtx.Provider value={theme}>
       <style>{makeCSS(theme)}</style>
       <SyncBadge syncing={syncing} />
-      {/* Dark mode toggle floating */}
       <div onClick={()=>setDarkMode(!darkMode)} style={{position:"fixed",top:12,right:12,zIndex:999,cursor:"pointer",fontSize:18,background:theme.card,width:32,height:32,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:theme.shadow,border:`1px solid ${theme.cardBorder}`}}>
         {darkMode?"☀️":"🌙"}
       </div>
-
       <div style={{maxWidth:500,margin:"0 auto",minHeight:"100vh",background:theme.bg,paddingBottom:80,transition:"background .3s"}}>
         {section!=="home"&&(
           <div style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:10,background:theme.bg,position:"sticky",top:0,zIndex:100}}>
