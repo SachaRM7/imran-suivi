@@ -200,6 +200,7 @@ const defaultState = () => ({
   customExercises: {},
   books: [],
   testedRecipes: {},
+  customRecipes: [],
   setup: false,
   _lastUpdated: null,
   _updatedBy: null
@@ -1281,16 +1282,26 @@ const BABY_RECIPES = [
 ];
 
 // ─── SECTION: Food ───
+const RECIPE_EMOJIS = ["🍲","🥣","🍛","🥗","🍝","🍜","🥘","🍵"];
+
 const FoodSection = ({ data, update }) => {
   const { theme } = useTheme();
   const [view, setView] = useState("aliments");
   const [cat, setCat] = useState("Légumes");
-  const [addFoodCat, setAddFoodCat] = useState(null); // null = fermé, sinon = catégorie pré-sélectionnée
+  const [addFoodCat, setAddFoodCat] = useState(null);
   const [customName, setCustomName] = useState("");
   const [recipeModal, setRecipeModal] = useState(null);
   const [portions, setPortions] = useState(1);
   const [recipeFilters, setRecipeFilters] = useState(new Set());
   const [recipeNote, setRecipeNote] = useState("");
+  const [recipeTab, setRecipeTab] = useState("all");
+  const [createModal, setCreateModal] = useState(false);
+  const [editRecipeId, setEditRecipeId] = useState(null);
+  const [newName, setNewName] = useState("");
+  const [newEmoji, setNewEmoji] = useState("🍲");
+  const [newIngredients, setNewIngredients] = useState([{ name: "", qty: "", unit: "g" }]);
+  const [newPortions, setNewPortions] = useState(2);
+  const [newSteps, setNewSteps] = useState("");
 
   const toggle = (name) => update(d => { d.foods[name] ? delete d.foods[name] : d.foods[name] = { date: todayStr(), reaction: "ok" }; });
   const setReaction = (name, r) => update(d => { if (d.foods[name]) d.foods[name].reaction = r; });
@@ -1325,19 +1336,70 @@ const FoodSection = ({ data, update }) => {
     });
   };
 
+  const customRecipes = Array.isArray(data.customRecipes) ? data.customRecipes : [];
+
+  const openCreate = () => {
+    setEditRecipeId(null); setNewName(""); setNewEmoji("🍲");
+    setNewIngredients([{ name: "", qty: "", unit: "g" }]);
+    setNewPortions(2); setNewSteps(""); setCreateModal(true);
+  };
+
+  const openEdit = (recipe, e) => {
+    e.stopPropagation();
+    setEditRecipeId(recipe.id); setNewName(recipe.name); setNewEmoji(recipe.emoji);
+    setNewIngredients(recipe.ingredients.map(i => ({ ...i, qty: String(i.qty) })));
+    setNewPortions(recipe.basePortions); setNewSteps(recipe.steps || ""); setCreateModal(true);
+  };
+
+  const saveCustomRecipe = () => {
+    const name = newName.trim();
+    if (!name) return;
+    const ingredients = newIngredients
+      .filter(i => i.name.trim())
+      .map(i => ({ name: i.name.trim(), qty: Number(i.qty) || 0, unit: i.unit }));
+    if (editRecipeId) {
+      update(d => {
+        const idx = (d.customRecipes || []).findIndex(r => r.id === editRecipeId);
+        if (idx !== -1) d.customRecipes[idx] = { ...d.customRecipes[idx], name, emoji: newEmoji, ingredients, basePortions: newPortions, steps: newSteps.trim() };
+      });
+    } else {
+      update(d => {
+        if (!Array.isArray(d.customRecipes)) d.customRecipes = [];
+        d.customRecipes.push({ id: uid(), name, emoji: newEmoji, ingredients, basePortions: newPortions, steps: newSteps.trim(), createdAt: todayStr() });
+      });
+    }
+    setCreateModal(false);
+  };
+
+  const deleteCustomRecipe = (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Supprimer cette recette ?")) return;
+    update(d => { d.customRecipes = (d.customRecipes || []).filter(r => r.id !== id); });
+  };
+
+  const updateIngredient = (idx, field, val) => setNewIngredients(prev => prev.map((ing, i) => i === idx ? { ...ing, [field]: val } : ing));
+  const addIngredientRow = () => setNewIngredients(prev => [...prev, { name: "", qty: "", unit: "g" }]);
+  const removeIngredientRow = (idx) => setNewIngredients(prev => prev.filter((_, i) => i !== idx));
+
   const tried = Object.keys(data.foods||{}).filter(k => data.foods[k]).length;
   const customTotal = Object.values(data.customFoods||{}).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
   const total = Object.values(FOOD_CATEGORIES).flat().length + customTotal;
 
   const validated = new Set(Object.keys(data.foods||{}).filter(k => data.foods[k]));
   const testedRecipes = data.testedRecipes || {};
-  const testedCount = BABY_RECIPES.filter(r => testedRecipes[r.name]).length;
+  const allRecipePool = [
+    ...BABY_RECIPES.map(r => ({ ...r, isCustom: false })),
+    ...customRecipes.map(r => ({ ...r, isCustom: true, ageMin: null })),
+  ];
+  const testedCount = allRecipePool.filter(r => testedRecipes[r.name]).length;
 
   const RATING_EMOJIS = { loved: "❤️", ok: "👍", refused: "🚫" };
   const RATING_LABELS = { loved: "Adoré", ok: "Ok", refused: "Refusé" };
   const RATING_COLORS = { loved: { bg: "#FEF2F2", border: "#FECACA", text: "#991B1B" }, ok: { bg: "#F0FDF4", border: "#86EFAC", text: "#166534" }, refused: { bg: "#FFF7ED", border: "#FED7AA", text: "#9A3412" } };
 
-  const filteredRecipes = BABY_RECIPES.filter(recipe => {
+  const filteredRecipes = allRecipePool.filter(recipe => {
+    if (recipeTab === "predefined" && recipe.isCustom) return false;
+    if (recipeTab === "custom" && !recipe.isCustom) return false;
     const realIngs = recipe.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait");
     if (recipeFilters.has("compatible") && !realIngs.every(i => validated.has(i.name))) return false;
     if (recipeFilters.has("loved") && testedRecipes[recipe.name]?.rating !== "loved") return false;
@@ -1405,9 +1467,17 @@ const FoodSection = ({ data, update }) => {
 
       {view === "cuisine" && (
         <>
-          {/* Compteur + filtres */}
-          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginBottom: 10 }}>
-            {testedCount}/{BABY_RECIPES.length} recettes testées
+          {/* Tab toggle */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, background: theme.subtle, borderRadius: 12, padding: 4 }}>
+            {[["all","📖 Toutes"],["predefined","🍳 Prédéfinies"],["custom","✏️ Mes recettes"]].map(([v, label]) => (
+              <button key={v} onClick={() => setRecipeTab(v)} style={{ flex: 1, padding: "7px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 12, cursor: "pointer", background: recipeTab === v ? theme.card : "transparent", color: recipeTab === v ? "#7C3AED" : theme.textMuted, boxShadow: recipeTab === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
+            ))}
+          </div>
+
+          {/* Compteur + bouton créer + filtres */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{testedCount}/{allRecipePool.length} recettes testées</div>
+            <Btn onClick={openCreate} small>+ Créer</Btn>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
             {[
@@ -1418,6 +1488,7 @@ const FoodSection = ({ data, update }) => {
               <Chip key={f} active={recipeFilters.has(f)} onClick={() => toggleRecipeFilter(f)} color="#7C3AED">{label}</Chip>
             ))}
           </div>
+
           {filteredRecipes.length === 0 && <EmptyState emoji="🍳" text="Aucune recette pour ces filtres" />}
           {filteredRecipes.map((recipe, i) => {
             const realIngs = recipe.ingredients.filter(i => i.name !== "Eau" && i.name !== "Lait");
@@ -1425,12 +1496,19 @@ const FoodSection = ({ data, update }) => {
             const compatible = missing.length === 0;
             const tested = testedRecipes[recipe.name];
             return (
-              <Card key={i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); setRecipeNote(tested?.note || ""); }} style={{ marginBottom: 10, cursor: "pointer" }}>
+              <Card key={recipe.id || i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); setRecipeNote(tested?.note || ""); }} style={{ marginBottom: 10, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, color: theme.text }}>{recipe.name}</div>
-                    <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>≥ {recipe.ageMin} mois · {realIngs.map(i => i.name).join(", ")}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: theme.text, flex: 1 }}>{recipe.name}</div>
+                      {recipe.isCustom && (
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: "#EDE9FE", color: "#7C3AED", flexShrink: 0 }}>✏️ Perso</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>
+                      {recipe.ageMin ? `≥ ${recipe.ageMin} mois · ` : ""}{realIngs.map(i => i.name).join(", ")}
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: compatible ? "#F0FDF4" : "#FFFBEB", color: compatible ? "#166534" : "#92400E", border: `1px solid ${compatible ? "#86EFAC" : "#FDE68A"}` }}>
                         {compatible ? "✓ Compatible" : `⚠️ Manque : ${missing.map(i => i.name).join(", ")}`}
@@ -1441,12 +1519,89 @@ const FoodSection = ({ data, update }) => {
                       }
                     </div>
                   </div>
+                  {recipe.isCustom && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                      <IconBtn onClick={(e) => openEdit(recipe, e)}>✏️</IconBtn>
+                      <IconBtn onClick={(e) => deleteCustomRecipe(recipe.id, e)}>🗑</IconBtn>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
           })}
         </>
       )}
+
+      {/* Modal création/édition recette custom */}
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title={editRecipeId ? "Modifier la recette" : "Créer une recette"}>
+        <Input label="Nom de la recette" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Ex: Purée courgette maison" autoFocus />
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Emoji</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {RECIPE_EMOJIS.map(e => (
+              <button key={e} onClick={() => setNewEmoji(e)} style={{ width: 40, height: 40, borderRadius: 10, border: `2px solid ${newEmoji === e ? "#7C3AED" : theme.border}`, background: newEmoji === e ? "#EDE9FE" : theme.card, fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{e}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Ingrédients</div>
+          {newIngredients.map((ing, idx) => (
+            <div key={idx} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+              <input
+                value={ing.name}
+                onChange={e => updateIngredient(idx, "name", e.target.value)}
+                placeholder="Ingrédient"
+                style={{ flex: 2, border: `1.5px solid ${theme.inputBorder}`, borderRadius: 8, padding: "7px 10px", fontSize: 13, background: theme.input, color: theme.text, outline: "none" }}
+              />
+              <input
+                value={ing.qty}
+                onChange={e => updateIngredient(idx, "qty", e.target.value)}
+                placeholder="Qté"
+                type="number"
+                min="0"
+                style={{ flex: 1, border: `1.5px solid ${theme.inputBorder}`, borderRadius: 8, padding: "7px 10px", fontSize: 13, background: theme.input, color: theme.text, outline: "none" }}
+              />
+              <select
+                value={ing.unit}
+                onChange={e => updateIngredient(idx, "unit", e.target.value)}
+                style={{ flex: 1, border: `1.5px solid ${theme.inputBorder}`, borderRadius: 8, padding: "7px 6px", fontSize: 13, background: theme.input, color: theme.text, outline: "none" }}
+              >
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+                <option value="unité">unité</option>
+              </select>
+              {newIngredients.length > 1 && (
+                <button onClick={() => removeIngredientRow(idx)} style={{ width: 28, height: 28, borderRadius: 7, border: "none", background: theme.subtle, color: theme.textMuted, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>✕</button>
+              )}
+            </div>
+          ))}
+          <button onClick={addIngredientRow} style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}>+ Ajouter un ingrédient</button>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Nombre de portions</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => setNewPortions(p => Math.max(1, p - 1))} style={{ width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${theme.border}`, background: theme.card, fontSize: 16, fontWeight: 700, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+            <span style={{ fontSize: 18, fontWeight: 900, color: "#7C3AED", minWidth: 24, textAlign: "center" }}>{newPortions}</span>
+            <button onClick={() => setNewPortions(p => p + 1)} style={{ width: 30, height: 30, borderRadius: 8, border: `1.5px solid ${theme.border}`, background: theme.card, fontSize: 16, fontWeight: 700, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Étapes de préparation</div>
+          <textarea
+            value={newSteps}
+            onChange={e => setNewSteps(e.target.value)}
+            placeholder={"1. Éplucher et couper...\n2. Cuire vapeur 15min...\n3. Mixer et servir."}
+            rows={4}
+            style={{ width: "100%", border: `1.5px solid ${theme.inputBorder}`, borderRadius: 10, padding: "8px 12px", fontSize: 13, background: theme.input, color: theme.text, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5 }}
+          />
+        </div>
+
+        <Btn onClick={saveCustomRecipe} disabled={!newName.trim()} full>Enregistrer</Btn>
+      </Modal>
 
       {/* Modal ajout aliment custom */}
       <Modal open={!!addFoodCat} onClose={() => setAddFoodCat(null)} title="Ajouter un aliment">
@@ -3159,7 +3314,7 @@ const ExercisesSection = ({ data, update }) => {
 const sanitize = (val) => {
   const def = defaultState();
   const merged = { ...def, ...(val || {}) };
-  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines","books"].forEach(k => {
+  ["bottles","diapers","sleep","growth","appointments","notes","medicines","baths","temperature","routines","books","customRecipes"].forEach(k => {
     if (!Array.isArray(merged[k])) merged[k] = [];
   });
   ["foods","teeth","vaccines","milestonesChecked","customFoods","exercises","customExercises","testedRecipes"].forEach(k => {
