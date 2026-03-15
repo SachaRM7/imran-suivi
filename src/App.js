@@ -4,7 +4,7 @@ import { ThemeCtx, LIGHT, DARK, makeCSS } from './theme/Theme';
 import { todayStr, defaultState } from './utils/helpers';
 import { SyncBadge } from './components/ui';
 import ProfileSelector from './components/ProfileSelector';
-import { DashboardHome, BottlesSection, DiapersSection, SleepSection, FoodSection, GrowthSection, MilestonesSection, TeethSection, AppointmentsSection, VaccinesSection, MedicinesSection, TemperatureSection, BathsSection, NotesSection, SettingsSection } from './components/sections';
+import { DashboardHome, BottlesSection, DiapersSection, SleepSection, FoodSection, RecipesSection, GrowthSection, MilestonesSection, TeethSection, AppointmentsSection, VaccinesSection, MedicinesSection, TemperatureSection, BathsSection, NotesSection, SettingsSection, RoutinesSection, ExercisesSection, BooksSection } from './components/sections';
 
 /* ═══════════════════════════════════════════════════════
    BABY TRACKER & DEVELOPMENT DASHBOARD v2
@@ -130,6 +130,10 @@ export default function App() {
     diapers: <DiapersSection data={data} update={update} />,
     sleep: <SleepSection data={data} update={update} />,
     food: <FoodSection data={data} update={update} />,
+    recipes: <RecipesSection data={data} update={update} />,
+    routines: <RoutinesSection data={data} update={update} />,
+    exercises: <ExercisesSection data={data} update={update} profile={profile} />,
+    books: <BooksSection data={data} update={update} />,
     growth: <GrowthSection data={data} update={update} profile={profile} />,
     milestones: <MilestonesSection data={data} update={update} profile={profile} />,
     teeth: <TeethSection data={data} update={update} />,
@@ -168,8 +172,8 @@ export default function App() {
         <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:500,background:theme.navBg,borderTop:`1.5px solid ${theme.navBorder}`,display:"flex",justifyContent:"space-around",padding:"8px 0 20px",zIndex:200}}>
           {navItems.map(n=>(
             <div key={n.key} onClick={()=>setSection(n.key)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:1,cursor:"pointer",color:section===n.key?theme.accent:theme.textMuted,transition:"color .2s",padding:"4px 8px"}}>
-              <span style={{fontSize:20,transition:"transform .15s",transform:section===n.key?"scale(1.15)":"scale(1)"}}>{n.emoji}</span>
-              <span style={{fontSize:10,fontWeight:800}}>{n.label}</span>
+              <span style={{fontSize:24,transition:"transform .15s",transform:section===n.key?"scale(1.15)":"scale(1)"}}>{n.emoji}</span>
+              <span style={{fontSize:11,fontWeight:800}}>{n.label}</span>
             </div>
           ))}
         </div>

@@ -12,8 +12,8 @@ export const LIGHT = {
   success: "#10B981", successBg: "#ECFDF5", danger: "#EF4444", dangerBg: "#FEF2F2", warn: "#F59E0B", warnBg: "#FFFBEB",
 };
 export const DARK = {
-  bg: "#0F0F14", card: "#1A1A24", cardBorder: "#2A2A36", text: "#E5E5EC", textSoft: "#9A9AB0",
-  textMuted: "#6B6B80", accent: "#A78BFA", accentLight: "#1E1B2E", accentGrad: "linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)",
+  bg: "#0F0F14", card: "#1A1A24", cardBorder: "#2A2A36", text: "#E5E5EC", textSoft: "#D1D5DB",
+  textMuted: "#9CA3AF", accent: "#A78BFA", accentLight: "#1E1B2E", accentGrad: "linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)",
   inputBorder: "#2A2A36", shadow: "0 1px 3px rgba(0,0,0,0.2)", navBg: "#15151E", navBorder: "#2A2A36",
   heroGrad: "linear-gradient(135deg, #2D1B69 0%, #1E1B4B 50%, #1A1A2E 100%)",
   modalBg: "rgba(0,0,0,0.7)", modalCard: "#1A1A24", chipBg: "#1E1E28", chipBorder: "#2A2A36",

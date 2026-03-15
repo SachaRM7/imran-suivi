@@ -13,3 +13,7 @@ export { default as TemperatureSection } from './TemperatureSection';
 export { default as BathsSection } from './BathsSection';
 export { default as NotesSection } from './NotesSection';
 export { default as SettingsSection } from './SettingsSection';
+export { default as RecipesSection } from './RecipesSection';
+export { default as RoutinesSection } from './RoutinesSection';
+export { default as ExercisesSection } from './ExercisesSection';
+export { default as BooksSection } from './BooksSection';

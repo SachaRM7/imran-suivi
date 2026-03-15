@@ -3,6 +3,14 @@ import { useTheme } from "../../theme/Theme";
 import { Card, Btn, Input, Modal, Chip, IconBtn, Empty } from "../ui";
 import { uid, nowStr, todayStr, fmtTime } from "../../utils/helpers";
 
+const typeColors = {
+  pipi:  { main: "#3B82F6", light: "#EFF6FF", border: "#93C5FD" },
+  caca:  { main: "#D97706", light: "#FEF3C7", border: "#FCD34D" },
+  selles:{ main: "#D97706", light: "#FEF3C7", border: "#FCD34D" },
+  mixte: { main: "#8B5CF6", light: "#F5F3FF", border: "#C4B5FD" },
+};
+const getTypeColor = (tp) => typeColors[tp] || typeColors.mixte;
+
 const DiapersSection = ({data,update}) => {
   const t=useTheme();
   const [modal,setModal]=useState(false);
@@ -16,6 +24,8 @@ const DiapersSection = ({data,update}) => {
 
   const emojis={pipi:"💦",caca:"💩",mixte:"🧷"};
   const typeLabels={pipi:"Pipi",caca:"Caca",mixte:"Mixte"};
+
+  const isModalToday = modalTime.startsWith(todayStr());
 
   const resetFunnel=()=>{setSelectedType(null);setQuantity(null);setConsistency(null);setColor(null);};
 
@@ -51,7 +61,10 @@ const DiapersSection = ({data,update}) => {
     else if(selectedType==="mixte"&&quantity&&consistency){quickAdd("mixte",quantity,consistency,col);}
   };
 
-  const addModal=()=>{update(d=>{d.diapers.push({id:uid(),type:modalType,time:modalTime,note:modalNote})});setModal(false);setModalNote("");};
+  const addModal=()=>{
+    update(d=>{d.diapers.push({id:uid(),type:modalType,time:modalTime,note:modalNote})});
+    setModal(false);setModalNote("");
+  };
   const remove=id=>update(d=>{d.diapers=d.diapers.filter(x=>x.id!==id)});
   const todayD=(data.diapers||[]).filter(d=>d.time?.startsWith(todayStr())).sort((a,b)=>b.time.localeCompare(a.time));
 
@@ -63,6 +76,8 @@ const DiapersSection = ({data,update}) => {
     return parts.join(" · ");
   };
 
+  const tc = selectedType ? getTypeColor(selectedType) : null;
+
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -72,27 +87,33 @@ const DiapersSection = ({data,update}) => {
 
       {/* Étape 1 — boutons type */}
       <div style={{display:"flex",gap:10,marginBottom:selectedType?0:18}}>
-        {["pipi","caca","mixte"].map(tp=>(
-          <button key={tp} onClick={()=>handleTypeClick(tp)} style={{
-            flex:1,padding:"14px 8px",borderRadius:selectedType===tp?"18px 18px 0 0":18,
-            border:`2px solid ${selectedType===tp?t.accent:t.cardBorder}`,borderBottom:selectedType===tp?"none":"",
-            background:selectedType===tp?t.accentLight:t.card,cursor:"pointer",
-            display:"flex",flexDirection:"column",alignItems:"center",gap:6,
-            transition:"all .2s",transform:selectedType===tp?"scale(1.02)":"scale(1)"
-          }}>
-            <span style={{fontSize:26}}>{emojis[tp]}</span>
-            <span style={{fontSize:12,fontWeight:800,color:selectedType===tp?t.accent:t.text}}>{typeLabels[tp]}</span>
-          </button>
-        ))}
+        {["pipi","caca","mixte"].map(tp=>{
+          const active=selectedType===tp;
+          const c=getTypeColor(tp);
+          return (
+            <button key={tp} onClick={()=>handleTypeClick(tp)} style={{
+              flex:1,padding:"14px 8px",
+              borderRadius:active?"18px 18px 0 0":18,
+              border:`2px solid ${active?c.main:t.cardBorder}`,
+              borderBottom:active?"none":"",
+              background:active?c.light:t.card,
+              cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+              transition:"all .2s",transform:active?"scale(1.02)":"scale(1)"
+            }}>
+              <span style={{fontSize:26}}>{emojis[tp]}</span>
+              <span style={{fontSize:12,fontWeight:800,color:active?c.main:t.text}}>{typeLabels[tp]}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Étape 2 — champs conditionnels */}
-      {selectedType&&(
+      {selectedType&&tc&&(
         <div style={{
           animation:"slideDown .25s ease",
-          background:t.accentLight,borderRadius:18,borderTopLeftRadius:0,
+          background:tc.light,borderRadius:18,borderTopLeftRadius:0,
           padding:"14px 14px 16px",marginBottom:18,
-          border:`2px solid ${t.accent}`,borderTop:"none"
+          border:`2px solid ${tc.main}`,borderTop:"none"
         }}>
           {/* Quantité pipi (pipi + mixte) */}
           {(selectedType==="pipi"||selectedType==="mixte")&&(
@@ -102,8 +123,9 @@ const DiapersSection = ({data,update}) => {
                 {["+","++","+++"].map(q=>(
                   <button key={q} onClick={()=>handleQuantity(q)} style={{
                     flex:1,padding:"11px 4px",borderRadius:14,
-                    border:`2px solid ${quantity===q?t.accent:t.inputBorder}`,
-                    background:quantity===q?t.accent:t.card,color:quantity===q?"#fff":t.text,
+                    border:`2px solid ${quantity===q?tc.main:t.inputBorder}`,
+                    background:quantity===q?tc.main:t.card,
+                    color:quantity===q?"#fff":t.text,
                     fontWeight:900,fontSize:15,cursor:"pointer",transition:"all .15s"
                   }}>{q}</button>
                 ))}
@@ -120,8 +142,9 @@ const DiapersSection = ({data,update}) => {
                   {["Dur","Normal","Liquide"].map(c=>(
                     <button key={c} onClick={()=>handleConsistency(c)} style={{
                       flex:1,padding:"11px 4px",borderRadius:14,
-                      border:`2px solid ${consistency===c?"#F59E0B":t.inputBorder}`,
-                      background:consistency===c?"#F59E0B":t.card,color:consistency===c?"#fff":t.text,
+                      border:`2px solid ${consistency===c?tc.main:t.inputBorder}`,
+                      background:consistency===c?tc.main:t.card,
+                      color:consistency===c?"#fff":t.text,
                       fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s"
                     }}>{c}</button>
                   ))}
@@ -134,7 +157,8 @@ const DiapersSection = ({data,update}) => {
                     <button key={c} onClick={()=>handleColor(c)} style={{
                       flex:1,padding:"11px 4px",borderRadius:14,
                       border:`2px solid ${color===c?col:t.inputBorder}`,
-                      background:color===c?col:t.card,color:color===c?"#fff":t.text,
+                      background:color===c?col:t.card,
+                      color:color===c?"#fff":t.text,
                       fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"
                     }}>{c}</button>
                   ))}
@@ -155,14 +179,25 @@ const DiapersSection = ({data,update}) => {
               <div style={{fontWeight:700,fontSize:14}}>{emojis[d.type]||"🧷"} {typeLabels[d.type]||d.type}{detail?` · ${detail}`:""} · {fmtTime(d.time)}</div>
               {d.note&&<div style={{fontSize:12,color:t.textMuted}}>{d.note}</div>}
             </div>
-            <IconBtn onClick={()=>remove(d.id)}>🗑</IconBtn>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <IconBtn onClick={()=>remove(d.id)} style={{padding:6}}>🗑</IconBtn>
+            </div>
           </Card>
         );
       })}
 
       <Modal open={modal} onClose={()=>setModal(false)} title="Couche">
-        <div style={{display:"flex",gap:8,marginBottom:14}}>{["pipi","caca","mixte"].map(tp=><Chip key={tp} active={modalType===tp} onClick={()=>setModalType(tp)} color="#F59E0B">{emojis[tp]} {typeLabels[tp]}</Chip>)}</div>
-        <Input label="Heure" type="datetime-local" value={modalTime} onChange={e=>setModalTime(e.target.value)}/>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          {["pipi","caca","mixte"].map(tp=>(
+            <Chip key={tp} active={modalType===tp} onClick={()=>setModalType(tp)} color={getTypeColor(tp).main}>
+              {emojis[tp]} {typeLabels[tp]}
+            </Chip>
+          ))}
+        </div>
+        {isModalToday
+          ? <Input label="Heure" type="time" value={modalTime.slice(11,16)} onChange={e=>setModalTime(todayStr()+"T"+e.target.value)}/>
+          : <Input label="Heure" type="datetime-local" value={modalTime} onChange={e=>setModalTime(e.target.value)}/>
+        }
         <Input label="Note" value={modalNote} onChange={e=>setModalNote(e.target.value)} placeholder="Couleur, consistance..."/>
         <Btn onClick={addModal} full>Enregistrer</Btn>
       </Modal>

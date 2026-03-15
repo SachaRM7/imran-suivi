@@ -12,7 +12,13 @@ const MedicinesSection = ({data,update}) => {
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{fontSize:22,fontWeight:900}}>💊 Médicaments</div><Btn onClick={()=>{setTime(nowStr());setModal(true)}} small>+ Ajouter</Btn></div>
-      <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>{["Doliprane","Vitamine D","Fer","Sérum phy"].map(m=><Btn key={m} variant="secondary" small onClick={()=>quick(m)}>{m}</Btn>)}</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:18}}>
+        {["Doliprane","Vitamine D","Fer","Sérum phy"].map(m=>(
+          <Btn key={m} variant="secondary" small onClick={()=>quick(m)} style={{background:t.accentLight,border:`1.5px solid ${t.chipBorder}`,borderRadius:20,padding:"8px 14px",fontSize:13,fontWeight:700,color:t.accent}}>
+            💊 {m}
+          </Btn>
+        ))}
+      </div>
       {sorted.length===0&&<Empty emoji="💊" text="Aucun médicament"/>}
       {sorted.map(m=>(<Card key={m.id} style={{display:"flex",alignItems:"center",marginBottom:8}}><span style={{fontSize:22,marginRight:14}}>💊</span><div style={{flex:1}}><div style={{fontWeight:800,fontSize:14}}>{m.name}{m.dose?` — ${m.dose}`:""}</div><div style={{fontSize:12,color:t.textMuted}}>{fmt(m.time)} {fmtTime(m.time)}{m.note?` · ${m.note}`:""}</div></div><IconBtn onClick={()=>remove(m.id)}>🗑</IconBtn></Card>))}
       <Modal open={modal} onClose={()=>setModal(false)} title="Médicament"><Input label="Nom" value={name} onChange={e=>setName(e.target.value)}/><Input label="Dosage" value={dose} onChange={e=>setDose(e.target.value)} placeholder="2.5ml"/><Input label="Heure" type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/><Input label="Note" value={note} onChange={e=>setNote(e.target.value)}/><Btn onClick={add} full>Enregistrer</Btn></Modal>

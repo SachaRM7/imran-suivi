@@ -74,5 +74,37 @@ export const VACCINE_SCHEDULE = [
   {age:"16-18 mois",vaccines:["ROR (2ème dose)"]},
 ];
 
+export const EXERCISES_BY_MONTH = {
+  0:  [{label:"Peau à peau",tip:"20-30 min sur ta poitrine. Régule la température et la respiration, renforce le lien."},{label:"Contact visuel",tip:"À 20-25 cm de son visage, parle doucement. Son cerveau mémorise ton visage."},{label:"Tummy time 1 min",tip:"Quelques secondes sur ta poitrine ou un tapis. Renforce les muscles du cou."}],
+  1:  [{label:"Tummy time 2-3 min",tip:"Plusieurs séances courtes par jour. Un petit rouleau sous la poitrine aide."},{label:"Mobile noir & blanc",tip:"Contraste fort = meilleure stimulation visuelle. Placer à 30 cm."},{label:"Parler et chanter",tip:"Commente tes gestes à voix haute. Bébé mémorise les patterns sonores du langage."}],
+  2:  [{label:"Tummy time 5 min",tip:"Plusieurs séances de 3-5 min. Place un jouet devant lui pour motiver."},{label:"Jeu de miroir",tip:"Montre-lui son reflet. Il commence à s'intéresser aux visages."},{label:"Stimulation sonore douce",tip:"Clochettes, maracas. Secoue à 30 cm pour qu'il suive des yeux."}],
+  3:  [{label:"Attraper un hochet",tip:"Place un hochet léger dans sa main ouverte. Il commence à serrer volontairement."},{label:"Tummy time 10 min cumulés",tip:"Objectif : 10 min dans la journée. Il pousse sur ses avant-bras."},{label:"Jeu de coucou simple",tip:"Cache ton visage, réapparais. Il rit souvent dès 3 mois."}],
+  4:  [{label:"Roulade ventre-dos",tip:"Guide doucement la rotation en pliant une jambe. Laisse-le finir seul."},{label:"Jouet à attraper",tip:"Suspends un anneau de dentition à portée. Entraîne la coordination œil-main."},{label:"Chatouilles et rires",tip:"Stimule l'expression émotionnelle et les connexions sociales."}],
+  5:  [{label:"Assis avec appui (1 min)",tip:"En triangle de tes jambes ou avec un coussin. Pas plus d'une minute au début."},{label:"Roulade dos-ventre",tip:"Attire son attention d'un côté avec un jouet pour l'encourager."},{label:"Coucou avec tissu",tip:"Cache un jouet qu'il voit disparaître. Début de la permanence de l'objet."}],
+  6:  [{label:"Assis seul 30 sec",tip:"Place des coussins autour. Il tient seul quelques secondes."},{label:"Exploration de textures",tip:"Tissu, caoutchouc, bois lisse. Toucher et porter à la bouche (objets sécurisés)."},{label:"Premiers aliments texturés",tip:"Purée légèrement grumeleuse. Diversification à 6 mois recommandée."}],
+  7:  [{label:"Ramper / déplacement ventre",tip:"Mets un jouet hors de portée pour motiver. Certains bébés se déplacent sur le dos."},{label:"Pince grossière",tip:"Petits cubes ou biscuits à attraper avec toute la main."},{label:"Peek-a-boo actif",tip:"Il commence à tirer le tissu lui-même pour participer."}],
+  8:  [{label:"Position 4 pattes",tip:"Appui sur mains et genoux, balance doucement. Renforce épaules et hanches."},{label:"Vider un récipient",tip:"Donne un contenant et des objets. Vider > remplir au début."},{label:"Imitation de sons",tip:"Répète ses sons, ajoute des variantes. Il t'imite en te regardant."}],
+  9:  [{label:"Debout en s'agrippant",tip:"Laisse-le s'accrocher au canapé. Il tire pour se lever."},{label:"Pointer du doigt",tip:"Montre des objets en pointant. Il commence à imiter le geste."},{label:"Empiler 2 cubes",tip:"Démontre lentement, laisse-le imiter. Concentré 1-2 minutes."}],
+  10: [{label:"Cabotage le long des meubles",tip:"Marche latérale contre un canapé ou table basse. Le plus longtemps possible."},{label:"Pince fine pouce-index",tip:"Miettes de pain, petits pois. Surveille — développe la dextérité."},{label:"Livre cartonné",tip:"Tourne les pages ensemble. Nomme chaque image simplement."}],
+  11: [{label:"Marche tenu 2 mains",tip:"Soutiens-le en marchant. Diminue progressivement l'aide d'une main."},{label:"Chariot de pousse",tip:"Il pousse pour avancer. Renforce l'équilibre et la confiance."},{label:"Suivre une consigne",tip:"\"Donne-moi\" avec geste tendu. Si réussi, félicite avec enthousiasme."}],
+  12: [{label:"Premiers pas autonomes",tip:"Encourage 1-2 pas à la fois vers un jouet qu'il aime."},{label:"Empiler 3 cubes",tip:"Démontre lentement, laisse-le imiter."},{label:"Boire au gobelet",tip:"Gobelet à bec ou sans couvercle avec peu de liquide. L'aider à tenir."}],
+  15: [{label:"Courir maladroitement",tip:"Jeux de course dans le couloir. Beaucoup de chutes normales à cet âge."},{label:"Gribouiller avec un crayon",tip:"Crayon épais bébé. Griffonnages circulaires = bonne coordination."},{label:"Jeu symbolique simple",tip:"Nourrir une poupée, parler au téléphone jouet. Début du jeu imaginaire."}],
+  18: [{label:"Monter les escaliers (tenu)",tip:"Méthode 4 pattes pour descendre, toujours sous surveillance."},{label:"Lancer une balle",tip:"Distance 1-2m. Travaille la coordination et la motricité globale."},{label:"Trier formes / couleurs",tip:"Boîte à formes. Pas de pression — juste explorer et s'amuser."}],
+  24: [{label:"Sauter sur place",tip:"Tenir les deux pieds décollés simultanément = cap moteur important."},{label:"Pédaler sur tricycle",tip:"Même sans pédales au début, pousser avec les pieds."},{label:"Tracer une ligne verticale",tip:"Imite un trait. Signe de coordination visuomotrice qui progresse."}],
+};
+
 export const PROFILE_AVATARS = ["👶","👶🏻","👶🏼","👶🏽","👶🏾","👶🏿","🧒","🧒🏻","🧒🏼","🧒🏽","🧒🏾","🧒🏿"];
 export const PROFILE_COLORS = ["#A78BFA","#F472B6","#34D399","#60A5FA","#FBBF24","#F87171","#818CF8","#2DD4BF"];
+
+export const PRESET_RECIPES = [
+  {id:"r1",  name:"Purée carotte-patate douce",  ingredients:[{name:"Carotte",qty:"100g"},{name:"Patate douce",qty:"100g"}]},
+  {id:"r2",  name:"Compote pomme-poire",          ingredients:[{name:"Pomme",qty:"1"},{name:"Poire",qty:"1"}]},
+  {id:"r3",  name:"Brocoli riz poulet",           ingredients:[{name:"Brocoli",qty:"80g"},{name:"Riz",qty:"30g"},{name:"Poulet",qty:"50g"}]},
+  {id:"r4",  name:"Velouté courgette",            ingredients:[{name:"Courgette",qty:"150g"},{name:"Pomme de terre",qty:"50g"}]},
+  {id:"r5",  name:"Smoothie banane-myrtille",     ingredients:[{name:"Banane",qty:"1"},{name:"Myrtille",qty:"50g"}]},
+  {id:"r6",  name:"Saumon pomme de terre",        ingredients:[{name:"Saumon",qty:"50g"},{name:"Pomme de terre",qty:"100g"}]},
+  {id:"r7",  name:"Purée potiron riz",            ingredients:[{name:"Potiron",qty:"150g"},{name:"Riz",qty:"30g"}]},
+  {id:"r8",  name:"Épinards fromage blanc",       ingredients:[{name:"Épinard",qty:"100g"},{name:"Fromage blanc",qty:"50g"}]},
+  {id:"r9",  name:"Dinde courgette pâtes",        ingredients:[{name:"Dinde",qty:"50g"},{name:"Courgette",qty:"80g"},{name:"Pâtes",qty:"30g"}]},
+  {id:"r10", name:"Yaourt banane",                ingredients:[{name:"Yaourt nature",qty:"1"},{name:"Banane",qty:"½"}]},
+];

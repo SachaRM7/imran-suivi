@@ -26,8 +26,16 @@ const NotesSection = ({data,update,profileId}) => {
         {n.text&&<div style={{fontSize:14,lineHeight:1.7,color:t.text}}>{n.text}</div>}
       </Card>))}
       <Modal open={modal} onClose={()=>setModal(false)} title="Nouveau souvenir">
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {["😊","😢","😴","🤒","🎉","❤️","😂","🥰","😤"].map(m=>(<span key={m} onClick={()=>setMood(m)} style={{fontSize:24,cursor:"pointer",padding:4,borderRadius:8,background:mood===m?t.accentLight:"transparent"}}>{m}</span>))}
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+          {["😊","😢","😴","🤒","🎉","❤️","😂","🥰","😤"].map(m=>(
+            <span key={m} onClick={()=>setMood(m)} style={{
+              fontSize:26,cursor:"pointer",padding:"6px",borderRadius:10,
+              background:mood===m?t.accentLight:"transparent",
+              transition:"background .15s, transform .1s",
+              transform:mood===m?"scale(1.15)":"scale(1)",
+              display:"inline-block",
+            }}>{m}</span>
+          ))}
         </div>
         <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Aujourd'hui, bébé a..." style={{width:"100%",minHeight:100,padding:"12px 14px",borderRadius:14,border:`2px solid ${t.inputBorder}`,fontSize:15,outline:"none",resize:"vertical",boxSizing:"border-box",background:t.card,color:t.text}}/>
         {/* Photo upload */}

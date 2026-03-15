@@ -52,15 +52,15 @@ const ProfileSelector = ({profiles,onSelect,onAdd,onDelete}) => {
           <div onClick={e=>e.stopPropagation()} style={{background:"#1A1A24",borderRadius:24,padding:28,width:"90%",maxWidth:400,boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
             <h3 style={{color:"#fff",fontSize:20,fontWeight:800,marginBottom:20}}>Nouveau bébé 🍼</h3>
             <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#9A9AB0",marginBottom:5,textTransform:"uppercase"}}>Prénom</label>
+              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#D1D5DB",marginBottom:5,textTransform:"uppercase",letterSpacing:1}}>Prénom</label>
               <input value={name} onChange={e=>setName(e.target.value)} placeholder="Lucas" style={{width:"100%",padding:"11px 14px",borderRadius:14,border:"2px solid #2A2A36",background:"#0F0F14",color:"#fff",fontSize:15,outline:"none",boxSizing:"border-box"}}/>
             </div>
             <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#9A9AB0",marginBottom:5,textTransform:"uppercase"}}>Date de naissance</label>
+              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#D1D5DB",marginBottom:5,textTransform:"uppercase",letterSpacing:1}}>Date de naissance</label>
               <input type="date" value={bd} onChange={e=>setBd(e.target.value)} style={{width:"100%",padding:"11px 14px",borderRadius:14,border:"2px solid #2A2A36",background:"#0F0F14",color:"#fff",fontSize:15,outline:"none",boxSizing:"border-box"}}/>
             </div>
             <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#9A9AB0",marginBottom:5,textTransform:"uppercase"}}>Genre</label>
+              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#D1D5DB",marginBottom:5,textTransform:"uppercase",letterSpacing:1}}>Genre</label>
               <div style={{display:"flex",gap:10}}>
                 {[["boy","👦 Garçon"],["girl","👧 Fille"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setGender(v)} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:gender===v?"#7C3AED":"#1E1E28",color:gender===v?"#fff":"#9A9AB0",fontWeight:700,fontSize:14,cursor:"pointer"}}>{l}</button>
@@ -68,18 +68,29 @@ const ProfileSelector = ({profiles,onSelect,onAdd,onDelete}) => {
               </div>
             </div>
             <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#9A9AB0",marginBottom:5,textTransform:"uppercase"}}>Avatar</label>
+              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#D1D5DB",marginBottom:5,textTransform:"uppercase",letterSpacing:1}}>Avatar</label>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {PROFILE_AVATARS.map(a=>(<span key={a} onClick={()=>setAvatar(a)} style={{fontSize:28,cursor:"pointer",padding:4,borderRadius:10,background:avatar===a?"#2A2A36":"transparent"}}>{a}</span>))}
               </div>
             </div>
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#9A9AB0",marginBottom:5,textTransform:"uppercase"}}>Couleur</label>
+              <label style={{display:"block",fontSize:12,fontWeight:700,color:"#D1D5DB",marginBottom:5,textTransform:"uppercase",letterSpacing:1}}>Couleur</label>
               <div style={{display:"flex",gap:8}}>
                 {PROFILE_COLORS.map(c=>(<span key={c} onClick={()=>setColor(c)} style={{width:30,height:30,borderRadius:10,background:c,cursor:"pointer",border:color===c?"3px solid #fff":"3px solid transparent"}}/>))}
               </div>
             </div>
-            <button onClick={handleAdd} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#A78BFA,#818CF8)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>Créer le profil ✨</button>
+            <button
+              onClick={handleAdd}
+              disabled={!name || !bd}
+              style={{
+                width:"100%",padding:"14px",borderRadius:14,border:"none",
+                background:(name&&bd)?"linear-gradient(135deg,#A78BFA,#818CF8)":"#3A3A4A",
+                color:(name&&bd)?"#fff":"#6B6B80",
+                fontSize:16,fontWeight:800,
+                cursor:(name&&bd)?"pointer":"not-allowed",
+                opacity:(name&&bd)?1:0.7
+              }}
+            >Créer le profil ✨</button>
           </div>
         </div>
       )}

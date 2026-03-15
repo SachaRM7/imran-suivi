@@ -3,6 +3,7 @@ import { DEFAULT_MILESTONES } from '../constants';
 export const defaultState = () => ({
   bottles:[],diapers:[],sleep:[],foods:{},growth:[],milestones:JSON.parse(JSON.stringify(DEFAULT_MILESTONES)),
   milestonesChecked:{},teeth:{},appointments:[],notes:[],medicines:[],baths:[],vaccines:{},temperature:[],
+  recipes:[],recipeReactions:{},routines:[],exercisesChecked:{},customExercises:{},books:[],
   _lastUpdated:null
 });
 
