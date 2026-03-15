@@ -2024,40 +2024,110 @@ const BathsSection = ({ data, update }) => {
 };
 
 // ─── SECTION: Notes ───
+// ─── Lightbox photo ───
+const PhotoViewer = ({ src, onClose }) => {
+  if (!src) return null;
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
+      <img src={src} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: "92vw", maxHeight: "88vh", objectFit: "contain", borderRadius: 8, cursor: "default" }} />
+      <div onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 22, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>×</div>
+    </div>
+  );
+};
+
 const NotesSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [text, setText] = useState("");
   const [mood, setMood] = useState("😊");
-  const add = () => { if (!text.trim()) return; update(d => { d.notes.push({ id: uid(), text, mood, date: new Date().toISOString() }); }); setModal(false); setText(""); };
+  const [photo, setPhoto] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [viewPhoto, setViewPhoto] = useState(null);
+
+  const resetForm = () => { setText(""); setMood("😊"); setPhoto(null); setPreview(null); };
+
+  const add = () => {
+    if (!text.trim()) return;
+    update(d => { d.notes.push({ id: uid(), text, mood, photo: photo || null, date: new Date().toISOString() }); });
+    setModal(false); resetForm();
+  };
+
   const remove = (id) => update(d => { d.notes = d.notes.filter(x => x.id !== id); });
   const sorted = [...(data.notes||[])].sort((a, b) => b.date.localeCompare(a.date));
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Preview instantané (avant compression)
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
+    setPhotoLoading(true);
+    try {
+      const compressed = await compressImage(file, 1200, 0.7);
+      setPhoto(compressed);
+    } catch (err) {
+      console.error("Compression error:", err);
+      alert("Erreur lors du traitement de la photo : " + err.message);
+      setPreview(null);
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    if (preview) { URL.revokeObjectURL(preview); setPreview(null); }
+  };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>📝 Journal</div>
-        <Btn onClick={() => setModal(true)} small>+ Écrire</Btn>
+        <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>📝 Journal</div>
+        <Btn onClick={() => { resetForm(); setModal(true); }} small>+ Écrire</Btn>
       </div>
       {sorted.length === 0 && <EmptyState emoji="📝" text="Écrivez vos premiers souvenirs" />}
       {sorted.map(n => (
         <Card key={n.id} style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 700 }}>{n.mood} {fmtFull(n.date)}</span>
+            <span style={{ fontSize: 12, color: theme.textMuted, fontWeight: 700 }}>{n.mood} {fmtFull(n.date)}</span>
             <IconBtn onClick={() => remove(n.id)}>🗑</IconBtn>
           </div>
-          <div style={{ fontSize: 14, lineHeight: 1.7, color: "#374151" }}>{n.text}</div>
+          {n.photo && <img src={n.photo} alt="" onClick={e => { e.stopPropagation(); setViewPhoto(n.photo); }} style={{ width: "100%", maxHeight: 400, objectFit: "contain", borderRadius: 12, marginBottom: 8, background: theme.subtle, cursor: "zoom-in", display: "block" }} />}
+          <div style={{ fontSize: 14, lineHeight: 1.7, color: theme.text }}>{n.text}</div>
         </Card>
       ))}
-      <Modal open={modal} onClose={() => setModal(false)} title="Nouveau souvenir">
+      <Modal open={modal} onClose={() => { setModal(false); resetForm(); }} title="Nouveau souvenir">
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {["😊","😢","😴","🤒","🎉","❤️","😂","🥰","😤"].map(m => (
             <span key={m} onClick={() => setMood(m)} style={{ fontSize: 24, cursor: "pointer", padding: 4, borderRadius: 8, background: mood === m ? "#F3E8FF" : "transparent" }}>{m}</span>
           ))}
         </div>
+        {/* Photo */}
+        <div style={{ marginBottom: 14 }}>
+          {(preview || photo) && (
+            <div style={{ position: "relative", marginBottom: 8 }}>
+              <img src={preview || photo} alt="" style={{ width: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 10, background: theme.subtle }} />
+              {photoLoading && (
+                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+                  ⏳ Compression...
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <label style={{ flex: 1, padding: "9px 14px", borderRadius: 12, border: `1.5px dashed ${theme.inputBorder}`, background: theme.subtle, color: theme.textMuted, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {photoLoading ? "⏳ En cours..." : (preview || photo) ? "📷 Changer" : "📷 Ajouter une photo"}
+              <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: "none" }} />
+            </label>
+            {(preview || photo) && <Btn variant="secondary" small onClick={removePhoto}>✕</Btn>}
+          </div>
+        </div>
         <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Aujourd'hui, bébé a..."
-          style={{ width: "100%", minHeight: 120, padding: "12px 14px", borderRadius: 14, border: "2px solid #E5E7EB", fontSize: 15, fontFamily: "'Nunito', sans-serif", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
-        <Btn onClick={add} full style={{ marginTop: 8 }}>Enregistrer</Btn>
+          style={{ width: "100%", minHeight: 120, padding: "12px 14px", borderRadius: 14, border: `2px solid ${theme.inputBorder}`, background: theme.input, color: theme.text, fontSize: 15, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+        <Btn onClick={add} full style={{ marginTop: 8 }} disabled={!text.trim()}>Enregistrer</Btn>
       </Modal>
+      <PhotoViewer src={viewPhoto} onClose={() => setViewPhoto(null)} />
     </div>
   );
 };
@@ -2394,18 +2464,24 @@ const SetupScreen = ({ onComplete }) => {
 };
 
 // ─── Utilitaire : compression image → base64 ───
-const compressImage = (file, maxDim = 300, quality = 0.65) =>
+const compressImage = (file, maxDim = 1200, quality = 0.7) =>
   new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new window.Image();
       img.onload = () => {
-        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        const drawToBase64 = (dim, q) => {
+          const scale = Math.min(dim / img.width, dim / img.height, 1);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL("image/jpeg", q);
+        };
+        let result = drawToBase64(maxDim, quality);
+        // Si > 200KB en base64 (~266KB raw), recompresse une fois
+        if (result.length > 266000) result = drawToBase64(900, 0.5);
+        resolve(result);
       };
       img.src = e.target.result;
     };
@@ -2425,6 +2501,7 @@ const BooksSection = ({ data, update }) => {
   const [photoLoading, setPhotoLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState("recent");
+  const [viewPhoto, setViewPhoto] = useState(null);
 
   const books = [...(data.books || [])].sort((a, b) => {
     if (sortMode === "interestDesc") return (b.interest - a.interest) || (b.date || "").localeCompare(a.date || "");
@@ -2452,9 +2529,18 @@ const BooksSection = ({ data, update }) => {
   const handlePhoto = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Preview instantané avant compression
+    setPhoto(URL.createObjectURL(file));
     setPhotoLoading(true);
-    setPhoto(await compressImage(file));
-    setPhotoLoading(false);
+    try {
+      setPhoto(await compressImage(file));
+    } catch (err) {
+      console.error("Compression error:", err);
+      alert("Erreur lors du traitement de la photo : " + err.message);
+      setPhoto(null);
+    } finally {
+      setPhotoLoading(false);
+    }
   };
 
   const total = books.length;
@@ -2508,7 +2594,7 @@ const BooksSection = ({ data, update }) => {
         <Card key={b.id} onClick={() => openEdit(b)} style={{ marginBottom: 10, cursor: "pointer" }}>
           <div style={{ display: "flex", gap: 12 }}>
             {b.photo
-              ? <img src={b.photo} alt="" style={{ width: 60, height: 60, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+              ? <img src={b.photo} alt="" onClick={e => { e.stopPropagation(); setViewPhoto(b.photo); }} style={{ width: 60, height: 60, borderRadius: 10, objectFit: "cover", flexShrink: 0, cursor: "zoom-in" }} />
               : <div style={{ width: 60, height: 60, borderRadius: 10, background: theme.subtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>📖</div>
             }
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -2541,7 +2627,7 @@ const BooksSection = ({ data, update }) => {
 
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Photo (optionnel)</label>
-          {photo && <img src={photo} alt="" style={{ width: "100%", maxHeight: 140, objectFit: "cover", borderRadius: 10, marginBottom: 8 }} />}
+          {photo && <img src={photo} alt="" style={{ width: "100%", maxHeight: 320, objectFit: "contain", borderRadius: 10, marginBottom: 8, background: theme.subtle }} />}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <label style={{ flex: 1, padding: "9px 14px", borderRadius: 12, border: `1.5px dashed ${theme.inputBorder}`, background: theme.subtle, color: theme.textMuted, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
               {photoLoading ? "Compression..." : photo ? "Changer la photo" : "📷 Choisir une photo"}
@@ -2559,6 +2645,7 @@ const BooksSection = ({ data, update }) => {
 
         <Btn onClick={save} disabled={!title.trim()} full>{editId ? "Modifier" : "Enregistrer"}</Btn>
       </Modal>
+      <PhotoViewer src={viewPhoto} onClose={() => setViewPhoto(null)} />
     </div>
   );
 };
