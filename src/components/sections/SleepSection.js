@@ -4,13 +4,16 @@ import { Card, Btn, Input, Modal, Chip, IconBtn, Empty } from "../ui";
 import { uid, nowStr, todayStr, fmt, fmtTime } from "../../utils/helpers";
 
 const isNightTime = () => { const h = new Date().getHours(); return h >= 20 || h < 7; };
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); };
 
 const SleepSection = ({data,update}) => {
   const t=useTheme();
   const [modal,setModal]=useState(false);
+  const [editId,setEditId]=useState(null);
   const [start,setStart]=useState(nowStr());
   const [end,setEnd]=useState("");
   const [type,setType]=useState("sieste");
+  const [histDate,setHistDate]=useState(yesterday);
 
   const ongoing=(data.sleep||[]).find(s=>!s.end);
 
@@ -20,13 +23,22 @@ const SleepSection = ({data,update}) => {
   };
   const stopSleep=()=>update(d=>{const s=d.sleep.find(x=>x.id===ongoing.id);if(s)s.end=nowStr()});
 
-  const add=()=>{
-    update(d=>{d.sleep.push({id:uid(),start,end:end||null,type})});
-    setModal(false);
+  const openAdd=()=>{setEditId(null);setStart(nowStr());setEnd("");setType("sieste");setModal(true);};
+  const openEdit=(s)=>{setEditId(s.id);setStart(s.start);setEnd(s.end||"");setType(s.type||"sieste");setModal(true);};
+
+  const save=()=>{
+    if(editId){
+      update(d=>{const s=d.sleep.find(x=>x.id===editId);if(s){s.start=start;s.end=end||null;s.type=type;}});
+    } else {
+      update(d=>{d.sleep.push({id:uid(),start,end:end||null,type})});
+    }
+    setModal(false);setEditId(null);
   };
 
   const remove=id=>update(d=>{d.sleep=d.sleep.filter(x=>x.id!==id)});
   const sorted=[...(data.sleep||[])].sort((a,b)=>b.start.localeCompare(a.start));
+  const todayS=sorted.filter(s=>s.start.startsWith(todayStr()));
+  const olderS=sorted.filter(s=>!s.start.startsWith(todayStr()));
 
   const dur=s=>{
     if(!s.end)return"En cours 💤";
@@ -35,11 +47,15 @@ const SleepSection = ({data,update}) => {
   };
 
   const isCrossDay=s=>s.end&&s.start.slice(0,10)!==s.end.slice(0,10);
-
   const isStartToday = start.startsWith(todayStr());
-  const isEndToday = end.startsWith(todayStr());
-
+  const isEndToday = !end || end.startsWith(todayStr());
   const night=isNightTime();
+
+  const histEntries=olderS.filter(s=>s.start.slice(0,10)===histDate).sort((a,b)=>b.start.localeCompare(a.start));
+  const histDates=[...new Set(olderS.map(s=>s.start?.slice(0,10)).filter(Boolean))].sort().reverse();
+  const yest=yesterday();
+  const prevDay=()=>setHistDate(d=>{const dt=new Date(d);dt.setDate(dt.getDate()-1);return dt.toISOString().slice(0,10);});
+  const nextDay=()=>setHistDate(d=>{const dt=new Date(d);dt.setDate(dt.getDate()+1);const n=dt.toISOString().slice(0,10);return n<=yest?n:d;});
 
   return (
     <div>
@@ -47,10 +63,10 @@ const SleepSection = ({data,update}) => {
         <div>
           <div style={{fontSize:22,fontWeight:900}}>😴 Sommeil</div>
           <div style={{fontSize:13,color:t.textMuted,fontWeight:600}}>
-            {sorted.filter(s=>s.start.startsWith(todayStr())).length} entrée(s) aujourd'hui
+            {todayS.length} entrée(s) aujourd'hui
           </div>
         </div>
-        <Btn onClick={()=>{setStart(nowStr());setEnd("");setModal(true)}} small>+ Manuel</Btn>
+        <Btn onClick={openAdd} small>+ Manuel</Btn>
       </div>
 
       {/* Bouton principal */}
@@ -78,8 +94,8 @@ const SleepSection = ({data,update}) => {
         </button>
       )}
 
-      {sorted.length===0&&<Empty emoji="😴" text="Aucun sommeil enregistré"/>}
-      {sorted.slice(0,30).map(s=>{
+      {todayS.length===0&&!ongoing&&<Empty emoji="😴" text="Aucun sommeil enregistré aujourd'hui"/>}
+      {todayS.map(s=>{
         const crossDay=isCrossDay(s);
         return (
           <Card key={s.id} highlighted={!s.end} style={{display:"flex",alignItems:"center",marginBottom:8}}>
@@ -87,22 +103,64 @@ const SleepSection = ({data,update}) => {
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontWeight:800,fontSize:14}}>{dur(s)}</span>
-                {crossDay&&(
-                  <span style={{fontSize:10,fontWeight:800,padding:"1px 6px",borderRadius:6,background:t.accentLight,color:t.accent}}>
-                    ↩ nuit
-                  </span>
-                )}
+                {crossDay&&<span style={{fontSize:10,fontWeight:800,padding:"1px 6px",borderRadius:6,background:t.accentLight,color:t.accent}}>↩ nuit</span>}
               </div>
               <div style={{fontSize:12,color:t.textMuted,marginTop:1}}>
-                {fmt(s.start)} {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}`:"" }
+                {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}":""}
               </div>
             </div>
-            <IconBtn onClick={()=>remove(s.id)} style={{padding:8,margin:-8}}>🗑</IconBtn>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <IconBtn onClick={()=>openEdit(s)} style={{padding:8,margin:-8}}>✏️</IconBtn>
+              <IconBtn onClick={()=>remove(s.id)} style={{padding:8,margin:-8}}>🗑</IconBtn>
+            </div>
           </Card>
         );
       })}
 
-      <Modal open={modal} onClose={()=>setModal(false)} title="Sommeil">
+      {olderS.length>0&&(
+        <div style={{marginTop:18}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:1}}>Historique</div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span onClick={prevDay} style={{cursor:"pointer",color:t.accent,fontSize:20,lineHeight:1,padding:"0 4px"}}>‹</span>
+              <span style={{fontWeight:700,fontSize:13,color:t.text,minWidth:70,textAlign:"center"}}>{fmt(histDate+"T12:00:00")}</span>
+              <span onClick={nextDay} style={{cursor:"pointer",color:histDate<yest?t.accent:t.textMuted,fontSize:20,lineHeight:1,padding:"0 4px"}}>›</span>
+            </div>
+          </div>
+          {histEntries.length===0
+            ?<div style={{textAlign:"center",padding:"18px 0",color:t.textMuted,fontSize:13}}>Aucun sommeil ce jour</div>
+            :histEntries.map(s=>{
+              const crossDay=isCrossDay(s);
+              return (
+                <div key={s.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${t.cardBorder}`,fontSize:13}}>
+                  <span style={{fontSize:16,marginRight:8}}>{s.type==="nuit"?"🌙":"😴"}</span>
+                  <div style={{flex:1}}>
+                    <span style={{fontWeight:700}}>{dur(s)}</span>
+                    {crossDay&&<span style={{fontSize:10,fontWeight:800,marginLeft:4,padding:"1px 5px",borderRadius:5,background:t.accentLight,color:t.accent}}>↩</span>}
+                    <div style={{fontSize:11,color:t.textMuted}}>{fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}`:""}</div>
+                  </div>
+                  <IconBtn onClick={()=>openEdit(s)} style={{padding:4}}>✏️</IconBtn>
+                  <IconBtn onClick={()=>remove(s.id)}>🗑</IconBtn>
+                </div>
+              );
+            })
+          }
+          {histDates.length>0&&(
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+              {histDates.slice(0,10).map(d=>(
+                <span key={d} onClick={()=>setHistDate(d)} style={{
+                  fontSize:11,padding:"4px 10px",borderRadius:10,cursor:"pointer",fontWeight:700,
+                  background:histDate===d?t.accent:t.chipBg,
+                  color:histDate===d?"#fff":t.textSoft,
+                  border:`1px solid ${histDate===d?t.accent:t.chipBorder}`,
+                }}>{fmt(d+"T12:00:00")}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <Modal open={modal} onClose={()=>{setModal(false);setEditId(null);}} title={editId?"Modifier le sommeil":"Sommeil"}>
         <div style={{display:"flex",gap:8,marginBottom:14}}>
           {["sieste","nuit"].map(tp=>(
             <Chip key={tp} active={type===tp} onClick={()=>setType(tp)} color="#6366F1">
@@ -114,11 +172,11 @@ const SleepSection = ({data,update}) => {
           ? <Input label="Début" type="time" value={start.slice(11,16)} onChange={e=>setStart(todayStr()+"T"+e.target.value)}/>
           : <Input label="Début" type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/>
         }
-        {(end===("")||isEndToday)
+        {isEndToday
           ? <Input label="Fin (vide = en cours)" type="time" value={end.slice(11,16)} onChange={e=>setEnd(e.target.value?todayStr()+"T"+e.target.value:"")}/>
           : <Input label="Fin (vide = en cours)" type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/>
         }
-        <Btn onClick={add} full>Enregistrer</Btn>
+        <Btn onClick={save} full>{editId?"Mettre à jour":"Enregistrer"}</Btn>
       </Modal>
     </div>
   );
