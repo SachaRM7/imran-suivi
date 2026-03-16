@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "../../theme/Theme";
-import { Card, Btn, Input, Modal, Chip, IconBtn, Empty } from "../ui";
+import { Card, Btn, Input, Modal, IconBtn, Empty } from "../ui";
 import { uid, nowStr, todayStr, fmtTime } from "../../utils/helpers";
 
 const DiapersSection = ({ data, update }) => {
