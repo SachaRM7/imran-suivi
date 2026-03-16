@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"D:/Documents/PROJET/imran-suivi\" log --oneline -10)",
+      "Bash(git -C \"/mnt/d/Documents/PROJET/imran-suivi\" log --oneline -10)",
+      "Read(//d//**)",
+      "Bash(git -C \"D:/Documents/PROJET/imran-suivi\" log --oneline -15)",
+      "Bash(git -C \"D:/Documents/PROJET/imran-suivi\" add src/components/sections/BottlesSection.js src/components/sections/DiapersSection.js src/components/sections/SleepSection.js src/components/sections/TemperatureSection.js src/components/sections/BathsSection.js src/components/sections/MedicinesSection.js)"
+    ]
+  }
+}
