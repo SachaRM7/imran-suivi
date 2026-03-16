@@ -1,9 +1,0 @@
-{
-  "short_name": "Baby Tracker",
-  "name": "Baby Tracker & Development",
-  "icons": [],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#7C3AED",
-  "background_color": "#FAFAF9"
-}
