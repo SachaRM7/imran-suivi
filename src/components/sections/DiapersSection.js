@@ -231,24 +231,35 @@ const DiapersSection = ({data, update}) => {
         const cfg = TYPE_CFG[d.type] || TYPE_CFG.mixte;
         const detail = diaperDetail(d);
         return (
-          <Card key={d.id} style={{display:"flex",alignItems:"center",marginBottom:8}}>
-            <div style={{
-              width:38, height:38, borderRadius:12, flexShrink:0, marginRight:12,
-              background:cfg.light, border:`2px solid ${cfg.border}`,
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
-            }}>{cfg.emoji}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:800,fontSize:14,color:t.text}}>
-                {cfg.label}
-                {detail && <span style={{fontSize:12,color:t.textSoft,fontWeight:600,marginLeft:6}}>· {detail}</span>}
+          <Card key={d.id} style={{marginBottom:8,padding:"10px 14px"}}>
+            {/* Ligne principale */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:17,fontWeight:900,color:t.text}}>{fmtTime(d.time)}</span>
+                <span style={{
+                  fontSize:13,fontWeight:700,color:cfg.main,
+                  display:"flex",alignItems:"center",gap:4,
+                }}>
+                  <span style={{
+                    width:8,height:8,borderRadius:"50%",background:cfg.main,flexShrink:0,display:"inline-block",
+                  }}/>
+                  {cfg.emoji} {cfg.label}
+                  {detail && <span style={{color:t.textSoft,fontWeight:600,fontSize:12}}>· {detail}</span>}
+                </span>
               </div>
-              <div style={{fontSize:12,color:t.textMuted}}>
-                {fmtTime(d.time)}{d.note && <em style={{marginLeft:4}}>· {d.note}</em>}
+              <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                <IconBtn onClick={() => openEdit(d)} style={{padding:4}}>✏️</IconBtn>
+                <IconBtn onClick={() => remove(d.id)} style={{padding:4}}>🗑</IconBtn>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <IconBtn onClick={() => openEdit(d)} style={{padding:6}}>✏️</IconBtn>
-              <IconBtn onClick={() => remove(d.id)} style={{padding:6}}>🗑</IconBtn>
+            {/* Ligne note / CTA fantôme */}
+            <div onClick={() => openEdit(d)} style={{
+              marginTop:4, fontSize:12, cursor:"pointer",
+              color:t.textMuted,
+              opacity:d.note ? 1 : 0.3,
+              fontStyle:"italic",
+            }}>
+              {d.note || "Ajouter une note..."}
             </div>
           </Card>
         );
