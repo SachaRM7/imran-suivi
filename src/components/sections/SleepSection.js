@@ -106,7 +106,8 @@ const SleepSection = ({data,update}) => {
                 {crossDay&&<span style={{fontSize:10,fontWeight:800,padding:"1px 6px",borderRadius:6,background:t.accentLight,color:t.accent}}>↩ nuit</span>}
               </div>
               <div style={{fontSize:12,color:t.textMuted,marginTop:1}}>
-                {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}":""}
+                {fmtTime(s.start)}{s.end?` → ${crossDay?fmt(s.end)+" ":""}${fmtTime(s.end)}`:""}
+
               </div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
