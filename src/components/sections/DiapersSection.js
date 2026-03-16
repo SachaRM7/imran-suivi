@@ -3,165 +3,203 @@ import { useTheme } from "../../theme/Theme";
 import { Card, Btn, Input, Modal, Chip, IconBtn, Empty } from "../ui";
 import { uid, nowStr, todayStr, fmtTime, fmt } from "../../utils/helpers";
 
-const typeColors = {
-  pipi:  { main: "#3B82F6", light: "#EFF6FF", border: "#93C5FD" },
-  caca:  { main: "#D97706", light: "#FEF3C7", border: "#FCD34D" },
-  selles:{ main: "#D97706", light: "#FEF3C7", border: "#FCD34D" },
-  mixte: { main: "#8B5CF6", light: "#F5F3FF", border: "#C4B5FD" },
+const TYPE_CFG = {
+  pipi:  { main:"#3B82F6", light:"#EFF6FF", border:"#93C5FD", emoji:"💦", label:"Pipi" },
+  caca:  { main:"#D97706", light:"#FEF3C7", border:"#FCD34D", emoji:"💩", label:"Caca" },
+  mixte: { main:"#8B5CF6", light:"#F5F3FF", border:"#C4B5FD", emoji:"💩💦", label:"Mixte" },
 };
-const getTypeColor = (tp) => typeColors[tp] || typeColors.mixte;
 
-const yesterday = () => { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); };
+const DiapersSection = ({data, update}) => {
+  const t = useTheme();
+  const [selDate, setSelDate]   = useState(todayStr());
+  const [modal, setModal]       = useState(false);
+  const [editId, setEditId]     = useState(null);
+  const [modalType, setModalType]   = useState("pipi");
+  const [modalTime, setModalTime]   = useState(nowStr());
+  const [modalNote, setModalNote]   = useState("");
+  const [modalQty, setModalQty]     = useState("");
+  const [modalCons, setModalCons]   = useState("");
+  const [modalColor, setModalColor] = useState("");
 
-const DiapersSection = ({data,update}) => {
-  const t=useTheme();
-  const [modal,setModal]=useState(false);
-  const [editId,setEditId]=useState(null);
-  const [modalType,setModalType]=useState("pipi");
-  const [modalTime,setModalTime]=useState(nowStr());
-  const [modalNote,setModalNote]=useState("");
-  const [selectedType,setSelectedType]=useState(null);
-  const [quantity,setQuantity]=useState(null);
-  const [consistency,setConsistency]=useState(null);
-  const [color,setColor]=useState(null);
-  const [histDate,setHistDate]=useState(yesterday);
+  // Quick Entry funnel state
+  const [selType, setSelType]       = useState(null);
+  const [quantity, setQuantity]     = useState(null);
+  const [consistency, setConsistency] = useState(null);
+  const [color, setColor]           = useState(null);
 
-  const emojis={pipi:"💦",caca:"💩",mixte:"💩💦"};
-  const typeLabels={pipi:"Pipi",caca:"Caca",mixte:"Mixte"};
-
+  const isToday      = selDate === todayStr();
   const isModalToday = modalTime.startsWith(todayStr());
 
-  const resetFunnel=()=>{setSelectedType(null);setQuantity(null);setConsistency(null);setColor(null);};
+  const resetFunnel = () => { setSelType(null); setQuantity(null); setConsistency(null); setColor(null); };
 
-  const quickAdd=(tp,qty,cons,col)=>{
-    const entry={id:uid(),type:tp,time:new Date().toISOString(),note:""};
-    if(qty)entry.quantity=qty;
-    if(cons)entry.consistency=cons;
-    if(col)entry.color=col;
-    update(d=>{d.diapers.push(entry)});
+  const quickAdd = (tp, qty, cons, col) => {
+    const entry = { id: uid(), type: tp, time: nowStr(), note: "" };
+    if (qty)  entry.quantity    = qty;
+    if (cons) entry.consistency = cons;
+    if (col)  entry.color       = col;
+    update(d => { d.diapers.push(entry); });
     resetFunnel();
   };
 
-  const handleTypeClick=(tp)=>{
-    if(selectedType===tp){resetFunnel();return;}
-    setSelectedType(tp);setQuantity(null);setConsistency(null);setColor(null);
+  const handleTypeClick = (tp) => {
+    if (selType === tp) { resetFunnel(); return; }
+    setSelType(tp); setQuantity(null); setConsistency(null); setColor(null);
   };
 
-  const handleQuantity=(qty)=>{
+  const handleQuantity = (qty) => {
     setQuantity(qty);
-    if(selectedType==="pipi"){quickAdd("pipi",qty,null,null);}
-    else if(selectedType==="mixte"&&consistency&&color){quickAdd("mixte",qty,consistency,color);}
+    if (selType === "pipi") { quickAdd("pipi", qty, null, null); }
+    else if (selType === "mixte" && consistency && color) { quickAdd("mixte", qty, consistency, color); }
   };
 
-  const handleConsistency=(cons)=>{
+  const handleConsistency = (cons) => {
     setConsistency(cons);
-    if(selectedType==="caca"&&color){quickAdd("caca",null,cons,color);}
-    else if(selectedType==="mixte"&&quantity&&color){quickAdd("mixte",quantity,cons,color);}
+    if (selType === "caca" && color) { quickAdd("caca", null, cons, color); }
+    else if (selType === "mixte" && quantity && color) { quickAdd("mixte", quantity, cons, color); }
   };
 
-  const handleColor=(col)=>{
+  const handleColor = (col) => {
     setColor(col);
-    if(selectedType==="caca"&&consistency){quickAdd("caca",null,consistency,col);}
-    else if(selectedType==="mixte"&&quantity&&consistency){quickAdd("mixte",quantity,consistency,col);}
+    if (selType === "caca" && consistency) { quickAdd("caca", null, consistency, col); }
+    else if (selType === "mixte" && quantity && consistency) { quickAdd("mixte", quantity, consistency, col); }
   };
 
-  const openAdd=()=>{setEditId(null);setModalType("pipi");setModalTime(nowStr());setModalNote("");setModal(true);};
-  const openEdit=(d)=>{setEditId(d.id);setModalType(d.type||"pipi");setModalTime(d.time);setModalNote(d.note||"");setModal(true);};
+  const openAdd = () => {
+    setEditId(null); setModalType("pipi"); setModalTime(nowStr());
+    setModalNote(""); setModalQty(""); setModalCons(""); setModalColor(""); setModal(true);
+  };
+  const openEdit = (d) => {
+    setEditId(d.id); setModalType(d.type || "pipi"); setModalTime(d.time);
+    setModalNote(d.note || ""); setModalQty(d.quantity || ""); setModalCons(d.consistency || ""); setModalColor(d.color || "");
+    setModal(true);
+  };
 
-  const save=()=>{
-    if(editId){
-      update(d=>{const x=d.diapers.find(i=>i.id===editId);if(x){x.type=modalType;x.time=modalTime;x.note=modalNote;}});
+  const save = () => {
+    if (editId) {
+      update(d => {
+        const x = d.diapers.find(i => i.id === editId);
+        if (x) {
+          x.type = modalType; x.time = modalTime; x.note = modalNote;
+          if (modalQty)   x.quantity    = modalQty;    else delete x.quantity;
+          if (modalCons)  x.consistency = modalCons;   else delete x.consistency;
+          if (modalColor) x.color       = modalColor;  else delete x.color;
+        }
+      });
     } else {
-      update(d=>{d.diapers.push({id:uid(),type:modalType,time:modalTime,note:modalNote})});
+      const entry = { id: uid(), type: modalType, time: modalTime, note: modalNote };
+      if (modalQty)   entry.quantity    = modalQty;
+      if (modalCons)  entry.consistency = modalCons;
+      if (modalColor) entry.color       = modalColor;
+      update(d => { d.diapers.push(entry); });
     }
-    setModal(false);setModalNote("");setEditId(null);
+    setModal(false); setEditId(null);
   };
 
-  const remove=id=>update(d=>{d.diapers=d.diapers.filter(x=>x.id!==id)});
-  const todayD=(data.diapers||[]).filter(d=>d.time?.startsWith(todayStr())).sort((a,b)=>b.time.localeCompare(a.time));
-  const olderD=(data.diapers||[]).filter(d=>!d.time?.startsWith(todayStr()));
+  const remove = id => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
 
-  const diaperDetail=(d)=>{
-    const parts=[];
-    if(d.quantity)parts.push({"+":"peu","++":"normal","+++":"beaucoup"}[d.quantity]||d.quantity);
-    if(d.consistency)parts.push(d.consistency);
-    if(d.color)parts.push(d.color);
+  const allDiapers = data.diapers || [];
+  const dayEntries = allDiapers.filter(d => d.time?.startsWith(selDate)).sort((a, b) => b.time.localeCompare(a.time));
+  const allDates   = [...new Set(allDiapers.map(d => d.time?.slice(0,10)).filter(Boolean))].sort().reverse();
+
+  const prevDay = () => setSelDate(d => {
+    const dt = new Date(d); dt.setDate(dt.getDate()-1); return dt.toISOString().slice(0,10);
+  });
+  const nextDay = () => setSelDate(d => {
+    const dt = new Date(d); dt.setDate(dt.getDate()+1);
+    const n = dt.toISOString().slice(0,10);
+    return n <= todayStr() ? n : d;
+  });
+
+  const diaperDetail = (d) => {
+    const parts = [];
+    if (d.quantity)    parts.push({"+":"peu","++":"normal","+++":"beaucoup"}[d.quantity] || d.quantity);
+    if (d.consistency) parts.push(d.consistency);
+    if (d.color)       parts.push(d.color);
     return parts.join(" · ");
   };
 
-  const tc = selectedType ? getTypeColor(selectedType) : null;
-
-  const histEntries=olderD.filter(d=>d.time?.slice(0,10)===histDate).sort((a,b)=>b.time.localeCompare(a.time));
-  const histDates=[...new Set(olderD.map(d=>d.time?.slice(0,10)).filter(Boolean))].sort().reverse();
-  const yest=yesterday();
-  const prevDay=()=>setHistDate(d=>{const dt=new Date(d);dt.setDate(dt.getDate()-1);return dt.toISOString().slice(0,10);});
-  const nextDay=()=>setHistDate(d=>{const dt=new Date(d);dt.setDate(dt.getDate()+1);const n=dt.toISOString().slice(0,10);return n<=yest?n:d;});
+  const tc = selType ? TYPE_CFG[selType] : null;
 
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div><div style={{fontSize:22,fontWeight:900}}>🧷 Couches</div><div style={{fontSize:13,color:t.textMuted,fontWeight:600}}>Aujourd'hui : {todayD.length}</div></div>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div>
+          <div style={{fontSize:22,fontWeight:900}}>🧷 Couches</div>
+          <div style={{fontSize:13,color:t.textMuted,fontWeight:600}}>
+            {dayEntries.length} couche{dayEntries.length!==1?"s":""} ce jour
+          </div>
+        </div>
         <Btn onClick={openAdd} small>+ Détail</Btn>
       </div>
 
-      {/* Étape 1 — boutons type */}
-      <div style={{display:"flex",gap:10,marginBottom:selectedType?0:18}}>
-        {["pipi","caca","mixte"].map(tp=>{
-          const active=selectedType===tp;
-          const c=getTypeColor(tp);
+      {/* Navigation par jour */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:t.chipBg,borderRadius:14,padding:"8px 14px",marginBottom:14,border:`1.5px solid ${t.chipBorder}`}}>
+        <span onClick={prevDay} style={{cursor:"pointer",color:t.accent,fontSize:22,lineHeight:1,padding:"0 6px",fontWeight:900,userSelect:"none"}}>‹</span>
+        <span style={{fontWeight:800,fontSize:14,color:t.text}}>
+          {isToday ? "Aujourd'hui" : fmt(selDate+"T12:00:00")}
+        </span>
+        <span onClick={nextDay} style={{cursor:"pointer",fontSize:22,lineHeight:1,padding:"0 6px",fontWeight:900,userSelect:"none",color:selDate<todayStr()?t.accent:t.textMuted}}>›</span>
+      </div>
+
+      {/* Quick Entry — étape 1 : type */}
+      <div style={{display:"flex",gap:10,marginBottom:selType?0:18}}>
+        {["pipi","caca","mixte"].map(tp => {
+          const cfg = TYPE_CFG[tp];
+          const active = selType === tp;
           return (
-            <button key={tp} onClick={()=>handleTypeClick(tp)} style={{
-              flex:1,padding:"14px 8px",
-              borderRadius:active?"18px 18px 0 0":18,
-              border:`2px solid ${active?c.main:t.cardBorder}`,
-              borderBottom:active?"none":"",
-              background:active?c.light:t.card,
-              cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,
-              transition:"all .2s",transform:active?"scale(1.02)":"scale(1)"
+            <button key={tp} onClick={() => handleTypeClick(tp)} style={{
+              flex:1, padding:"14px 8px",
+              borderRadius: active ? "18px 18px 0 0" : 18,
+              border: `2px solid ${active ? cfg.main : t.cardBorder}`,
+              borderBottom: active ? "none" : undefined,
+              background: active ? cfg.light : t.card,
+              cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+              transition:"all .2s", transform: active ? "scale(1.02)" : "scale(1)",
             }}>
-              <span style={{fontSize:26}}>{emojis[tp]}</span>
-              <span style={{fontSize:12,fontWeight:800,color:active?c.main:t.text}}>{typeLabels[tp]}</span>
+              <span style={{fontSize:26}}>{cfg.emoji}</span>
+              <span style={{fontSize:12,fontWeight:800,color:active?cfg.main:t.text}}>{cfg.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Étape 2 — champs conditionnels */}
-      {selectedType&&tc&&(
+      {/* Quick Entry — étape 2 : sous-options */}
+      {selType && tc && (
         <div style={{
           animation:"slideDown .25s ease",
-          background:tc.light,borderRadius:18,borderTopLeftRadius:0,
-          padding:"14px 14px 16px",marginBottom:18,
-          border:`2px solid ${tc.main}`,borderTop:"none"
+          background:tc.light, borderRadius:18, borderTopLeftRadius:0,
+          padding:"14px 14px 16px", marginBottom:18,
+          border:`2px solid ${tc.main}`, borderTop:"none",
         }}>
-          {(selectedType==="pipi"||selectedType==="mixte")&&(
-            <div style={{marginBottom:selectedType==="mixte"?16:0}}>
+          {(selType === "pipi" || selType === "mixte") && (
+            <div style={{marginBottom:selType==="mixte"?16:0}}>
               <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Quantité 💦</div>
               <div style={{display:"flex",gap:8}}>
-                {["+","++","+++"].map(q=>(
-                  <button key={q} onClick={()=>handleQuantity(q)} style={{
-                    flex:1,padding:"11px 4px",borderRadius:14,
+                {["+","++","+++"].map(q => (
+                  <button key={q} onClick={() => handleQuantity(q)} style={{
+                    flex:1, padding:"11px 4px", borderRadius:14,
                     border:`2px solid ${quantity===q?tc.main:t.inputBorder}`,
                     background:quantity===q?tc.main:t.card,
                     color:quantity===q?"#fff":t.text,
-                    fontWeight:900,fontSize:15,cursor:"pointer",transition:"all .15s"
+                    fontWeight:900, fontSize:15, cursor:"pointer", transition:"all .15s",
                   }}>{q}</button>
                 ))}
               </div>
             </div>
           )}
-          {(selectedType==="caca"||selectedType==="mixte")&&(
+          {(selType === "caca" || selType === "mixte") && (
             <>
               <div style={{marginBottom:12}}>
                 <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Consistance 💩</div>
                 <div style={{display:"flex",gap:8}}>
-                  {["Dur","Normal","Liquide"].map(c=>(
-                    <button key={c} onClick={()=>handleConsistency(c)} style={{
-                      flex:1,padding:"11px 4px",borderRadius:14,
+                  {["Liquide","Mou","Dur"].map(c => (
+                    <button key={c} onClick={() => handleConsistency(c)} style={{
+                      flex:1, padding:"11px 4px", borderRadius:14,
                       border:`2px solid ${consistency===c?tc.main:t.inputBorder}`,
                       background:consistency===c?tc.main:t.card,
                       color:consistency===c?"#fff":t.text,
-                      fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .15s"
+                      fontWeight:700, fontSize:13, cursor:"pointer", transition:"all .15s",
                     }}>{c}</button>
                   ))}
                 </div>
@@ -169,13 +207,13 @@ const DiapersSection = ({data,update}) => {
               <div>
                 <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Couleur</div>
                 <div style={{display:"flex",gap:8}}>
-                  {[["Normal","#D4A574"],["Vert","#22C55E"],["Jaune","#EAB308"],["Noir","#374151"]].map(([c,col])=>(
-                    <button key={c} onClick={()=>handleColor(c)} style={{
-                      flex:1,padding:"11px 4px",borderRadius:14,
+                  {[["Jaune","#EAB308"],["Vert","#22C55E"],["Marron","#D97706"],["Noir","#374151"]].map(([c,col]) => (
+                    <button key={c} onClick={() => handleColor(c)} style={{
+                      flex:1, padding:"11px 4px", borderRadius:14,
                       border:`2px solid ${color===c?col:t.inputBorder}`,
                       background:color===c?col:t.card,
                       color:color===c?"#fff":t.text,
-                      fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"
+                      fontWeight:700, fontSize:12, cursor:"pointer", transition:"all .15s",
                     }}>{c}</button>
                   ))}
                 </div>
@@ -185,78 +223,112 @@ const DiapersSection = ({data,update}) => {
         </div>
       )}
 
-      {todayD.length===0&&<Empty emoji="🧷" text="Aucune couche aujourd'hui"/>}
-      {todayD.map(d=>{
-        const detail=diaperDetail(d);
+      {/* Entrées du jour */}
+      {dayEntries.length === 0 && (
+        <Empty emoji="🧷" text={isToday ? "Aucune couche aujourd'hui" : "Aucune couche ce jour"}/>
+      )}
+      {dayEntries.map(d => {
+        const cfg = TYPE_CFG[d.type] || TYPE_CFG.mixte;
+        const detail = diaperDetail(d);
         return (
           <Card key={d.id} style={{display:"flex",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:22,marginRight:14}}>{emojis[d.type]||"🧷"}</span>
+            <div style={{
+              width:38, height:38, borderRadius:12, flexShrink:0, marginRight:12,
+              background:cfg.light, border:`2px solid ${cfg.border}`,
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
+            }}>{cfg.emoji}</div>
             <div style={{flex:1}}>
-              <div style={{fontWeight:700,fontSize:14}}>{emojis[d.type]||"🧷"} {typeLabels[d.type]||d.type}{detail?` · ${detail}`:""} · {fmtTime(d.time)}</div>
-              {d.note&&<div style={{fontSize:12,color:t.textMuted}}>{d.note}</div>}
+              <div style={{fontWeight:800,fontSize:14,color:t.text}}>
+                {cfg.label}
+                {detail && <span style={{fontSize:12,color:t.textSoft,fontWeight:600,marginLeft:6}}>· {detail}</span>}
+              </div>
+              <div style={{fontSize:12,color:t.textMuted}}>
+                {fmtTime(d.time)}{d.note && <em style={{marginLeft:4}}>· {d.note}</em>}
+              </div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <IconBtn onClick={()=>openEdit(d)} style={{padding:6}}>✏️</IconBtn>
-              <IconBtn onClick={()=>remove(d.id)} style={{padding:6}}>🗑</IconBtn>
+              <IconBtn onClick={() => openEdit(d)} style={{padding:6}}>✏️</IconBtn>
+              <IconBtn onClick={() => remove(d.id)} style={{padding:6}}>🗑</IconBtn>
             </div>
           </Card>
         );
       })}
 
-      {olderD.length>0&&(
-        <div style={{marginTop:18}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-            <div style={{fontSize:12,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:1}}>Historique</div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span onClick={prevDay} style={{cursor:"pointer",color:t.accent,fontSize:20,lineHeight:1,padding:"0 4px"}}>‹</span>
-              <span style={{fontWeight:700,fontSize:13,color:t.text,minWidth:70,textAlign:"center"}}>{fmt(histDate+"T12:00:00")}</span>
-              <span onClick={nextDay} style={{cursor:"pointer",color:histDate<yest?t.accent:t.textMuted,fontSize:20,lineHeight:1,padding:"0 4px"}}>›</span>
-            </div>
-          </div>
-          {histEntries.length===0
-            ?<div style={{textAlign:"center",padding:"18px 0",color:t.textMuted,fontSize:13}}>Aucune couche ce jour</div>
-            :histEntries.map(d=>{
-              const detail=diaperDetail(d);
-              return (
-                <div key={d.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${t.cardBorder}`,fontSize:13}}>
-                  <span style={{fontSize:16,marginRight:8}}>{emojis[d.type]||"🧷"}</span>
-                  <span style={{flex:1,fontWeight:700}}>{typeLabels[d.type]||d.type}{detail?` · ${detail}`:""}</span>
-                  <span style={{color:t.textMuted,marginRight:8}}>{fmtTime(d.time)}</span>
-                  <IconBtn onClick={()=>openEdit(d)} style={{padding:4}}>✏️</IconBtn>
-                  <IconBtn onClick={()=>remove(d.id)}>🗑</IconBtn>
-                </div>
-              );
-            })
-          }
-          {histDates.length>0&&(
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-              {histDates.slice(0,10).map(d=>(
-                <span key={d} onClick={()=>setHistDate(d)} style={{
-                  fontSize:11,padding:"4px 10px",borderRadius:10,cursor:"pointer",fontWeight:700,
-                  background:histDate===d?t.accent:t.chipBg,
-                  color:histDate===d?"#fff":t.textSoft,
-                  border:`1px solid ${histDate===d?t.accent:t.chipBorder}`,
-                }}>{fmt(d+"T12:00:00")}</span>
-              ))}
-            </div>
-          )}
+      {/* Raccourcis jours */}
+      {allDates.filter(d => d !== selDate).length > 0 && (
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:14}}>
+          {allDates.slice(0,10).filter(d => d !== selDate).map(d => (
+            <span key={d} onClick={() => setSelDate(d)} style={{
+              fontSize:11, padding:"4px 10px", borderRadius:10, cursor:"pointer", fontWeight:700,
+              background:t.chipBg, color:t.textSoft, border:`1px solid ${t.chipBorder}`,
+            }}>{d===todayStr()?"Aujourd'hui":fmt(d+"T12:00:00")}</span>
+          ))}
         </div>
       )}
 
-      <Modal open={modal} onClose={()=>{setModal(false);setEditId(null);}} title={editId?"Modifier la couche":"Couche"}>
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {["pipi","caca","mixte"].map(tp=>(
-            <Chip key={tp} active={modalType===tp} onClick={()=>setModalType(tp)} color={getTypeColor(tp).main}>
-              {emojis[tp]} {typeLabels[tp]}
+      {/* Modal ajouter / modifier */}
+      <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId?"Modifier la couche":"Ajouter une couche"}>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          {["pipi","caca","mixte"].map(tp => (
+            <Chip key={tp} active={modalType===tp} onClick={() => setModalType(tp)} color={TYPE_CFG[tp].main}>
+              {TYPE_CFG[tp].emoji} {TYPE_CFG[tp].label}
             </Chip>
           ))}
         </div>
         {isModalToday
-          ? <Input label="Heure" type="time" value={modalTime.slice(11,16)} onChange={e=>setModalTime(todayStr()+"T"+e.target.value)}/>
-          : <Input label="Heure" type="datetime-local" value={modalTime} onChange={e=>setModalTime(e.target.value)}/>
+          ? <Input label="Heure" type="time" value={modalTime.slice(11,16)} onChange={e => setModalTime(todayStr()+"T"+e.target.value)}/>
+          : <Input label="Heure" type="datetime-local" value={modalTime} onChange={e => setModalTime(e.target.value)}/>
         }
-        <Input label="Note" value={modalNote} onChange={e=>setModalNote(e.target.value)} placeholder="Couleur, consistance..."/>
-        <Btn onClick={save} full>{editId?"Mettre à jour":"Enregistrer"}</Btn>
+        {(modalType === "pipi" || modalType === "mixte") && (
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Quantité</div>
+            <div style={{display:"flex",gap:8}}>
+              {["+","++","+++"].map(q => (
+                <button key={q} onClick={() => setModalQty(modalQty===q?"":q)} style={{
+                  flex:1, padding:"10px 4px", borderRadius:14,
+                  border:`2px solid ${modalQty===q?TYPE_CFG[modalType].main:t.inputBorder}`,
+                  background:modalQty===q?TYPE_CFG[modalType].main:t.card,
+                  color:modalQty===q?"#fff":t.text,
+                  fontWeight:900, fontSize:15, cursor:"pointer",
+                }}>{q}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        {(modalType === "caca" || modalType === "mixte") && (
+          <>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Consistance</div>
+              <div style={{display:"flex",gap:8}}>
+                {["Liquide","Mou","Dur"].map(c => (
+                  <button key={c} onClick={() => setModalCons(modalCons===c?"":c)} style={{
+                    flex:1, padding:"10px 4px", borderRadius:14,
+                    border:`2px solid ${modalCons===c?TYPE_CFG[modalType].main:t.inputBorder}`,
+                    background:modalCons===c?TYPE_CFG[modalType].main:t.card,
+                    color:modalCons===c?"#fff":t.text,
+                    fontWeight:700, fontSize:13, cursor:"pointer",
+                  }}>{c}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Couleur</div>
+              <div style={{display:"flex",gap:8}}>
+                {[["Jaune","#EAB308"],["Vert","#22C55E"],["Marron","#D97706"],["Noir","#374151"]].map(([c,col]) => (
+                  <button key={c} onClick={() => setModalColor(modalColor===c?"":c)} style={{
+                    flex:1, padding:"10px 4px", borderRadius:14,
+                    border:`2px solid ${modalColor===c?col:t.inputBorder}`,
+                    background:modalColor===c?col:t.card,
+                    color:modalColor===c?"#fff":t.text,
+                    fontWeight:700, fontSize:12, cursor:"pointer",
+                  }}>{c}</button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        <Input label="Note" value={modalNote} onChange={e => setModalNote(e.target.value)} placeholder="Observations..."/>
+        <Btn onClick={save} full style={{marginTop:4}}>{editId?"Mettre à jour":"Enregistrer"}</Btn>
       </Modal>
     </div>
   );
