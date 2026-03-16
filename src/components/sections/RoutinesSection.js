@@ -27,20 +27,29 @@ const RoutinesSection = ({data, update}) => {
   const checkedCount = routine ? Object.values(routine.checked || {}).filter(Boolean).length : 0;
 
   // ─── Mutations ───
+  const ensureRoutines = (d) => {
+    if (!d.routines?.length) d.routines = DEFAULT_ROUTINES.map(r => ({...r, checked:{}}));
+  };
+
   const toggleItem = (routineId, itemId) => update(d => {
-    const r = (d.routines||DEFAULT_ROUTINES).find(r => r.id === routineId);
+    ensureRoutines(d);
+    const r = d.routines.find(r => r.id === routineId);
     if (!r) return;
     if (!r.checked) r.checked = {};
     r.checked[itemId] = !r.checked[itemId];
   });
 
   const resetRoutine = () => update(d => {
-    const r = (d.routines||DEFAULT_ROUTINES).find(r => r.id === activeRoutineId);
+    ensureRoutines(d);
+    const r = d.routines.find(r => r.id === activeRoutineId);
     if (r) r.checked = {};
   });
 
   const deleteRoutine = id => {
-    update(d => { d.routines = (d.routines||DEFAULT_ROUTINES).filter(r => r.id !== id); });
+    update(d => {
+      ensureRoutines(d);
+      d.routines = d.routines.filter(r => r.id !== id);
+    });
     if (activeRoutineId === id) setActiveRoutine(null);
   };
 
@@ -67,7 +76,7 @@ const RoutinesSection = ({data, update}) => {
   const saveEdit = () => {
     if (!editName.trim()) return;
     update(d => {
-      if (!d.routines) d.routines = DEFAULT_ROUTINES.map(r => ({...r}));
+      if (!d.routines?.length) d.routines = DEFAULT_ROUTINES.map(r => ({...r, checked:{}}));
       const idx = d.routines.findIndex(r => r.id === editId);
       if (idx !== -1) {
         d.routines[idx].name  = editName.trim();
@@ -90,7 +99,7 @@ const RoutinesSection = ({data, update}) => {
   const saveCreate = () => {
     if (!editName.trim()) return;
     update(d => {
-      if (!d.routines) d.routines = DEFAULT_ROUTINES.map(r => ({...r}));
+      if (!d.routines?.length) d.routines = DEFAULT_ROUTINES.map(r => ({...r, checked:{}}));
       d.routines.push({
         id: editId,
         name: editName.trim(),

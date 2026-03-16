@@ -44,7 +44,7 @@ export default function App() {
     setData(null);
     const unsub = subscribeToData(activeProfileId, (val) => {
       if (ignoreNext.current) { ignoreNext.current = false; return; }
-      setData(val || defaultState());
+      setData({...defaultState(), ...(val || {})});
       setSyncing(false);
     });
     return unsub;

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTheme } from "../../theme/Theme";
 import { Card, Btn, Input, Modal, Chip, IconBtn, Empty } from "../ui";
-import { uid, nowStr, todayStr, fmtTime } from "../../utils/helpers";
+import { uid, nowStr, todayStr, fmtTime, fmt } from "../../utils/helpers";
 
 const typeColors = {
   pipi:  { main: "#3B82F6", light: "#EFF6FF", border: "#93C5FD" },
@@ -67,6 +67,7 @@ const DiapersSection = ({data,update}) => {
   };
   const remove=id=>update(d=>{d.diapers=d.diapers.filter(x=>x.id!==id)});
   const todayD=(data.diapers||[]).filter(d=>d.time?.startsWith(todayStr())).sort((a,b)=>b.time.localeCompare(a.time));
+  const olderD=(data.diapers||[]).filter(d=>!d.time?.startsWith(todayStr())).sort((a,b)=>b.time.localeCompare(a.time));
 
   const diaperDetail=(d)=>{
     const parts=[];
@@ -185,6 +186,23 @@ const DiapersSection = ({data,update}) => {
           </Card>
         );
       })}
+
+      {olderD.length>0&&(
+        <details style={{marginTop:14}}>
+          <summary style={{fontSize:13,fontWeight:700,color:t.textMuted,cursor:"pointer",padding:"8px 0"}}>Historique ({olderD.length})</summary>
+          {olderD.slice(0,50).map(d=>{
+            const detail=diaperDetail(d);
+            return (
+              <div key={d.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${t.cardBorder}`,fontSize:13}}>
+                <span style={{fontSize:16,marginRight:8}}>{emojis[d.type]||"🧷"}</span>
+                <span style={{flex:1,fontWeight:700}}>{typeLabels[d.type]||d.type}{detail?` · ${detail}`:""}</span>
+                <span style={{color:t.textMuted}}>{fmt(d.time)} {fmtTime(d.time)}</span>
+                <IconBtn onClick={()=>remove(d.id)}>🗑</IconBtn>
+              </div>
+            );
+          })}
+        </details>
+      )}
 
       <Modal open={modal} onClose={()=>setModal(false)} title="Couche">
         <div style={{display:"flex",gap:8,marginBottom:14}}>
