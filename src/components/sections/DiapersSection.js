@@ -26,7 +26,7 @@ const DiapersSection = ({data,update}) => {
   const [color,setColor]=useState(null);
   const [histDate,setHistDate]=useState(yesterday);
 
-  const emojis={pipi:"💦",caca:"💩",mixte:"🧷"};
+  const emojis={pipi:"💦",caca:"💩",mixte:"💩💦"};
   const typeLabels={pipi:"Pipi",caca:"Caca",mixte:"Mixte"};
 
   const isModalToday = modalTime.startsWith(todayStr());
