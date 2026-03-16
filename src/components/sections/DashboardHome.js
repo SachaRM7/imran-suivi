@@ -42,6 +42,13 @@ const DashboardHome = ({data,profile,goTo,onSwitchProfile}) => {
     {key:"settings",emoji:"⚙️",label:"Paramètres",value:"PDF, thème..."},
   ];
 
+  const devCards = [
+    {key:"exercises",emoji:"🧩",label:"Éveil & Exercices",value:"Activités du mois"},
+    {key:"routines",emoji:"📋",label:"Routines",value:`${(data.routines||[]).length||3} routines`},
+    {key:"books",emoji:"📚",label:"Bibliothèque",value:`${(data.books||[]).length} livre${(data.books||[]).length!==1?"s":""}`},
+    {key:"recipes",emoji:"🍳",label:"Recettes",value:"Compatibles aliments"},
+  ];
+
   const cardGrid = (cards) => (
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
       {cards.map(c=>(
@@ -83,6 +90,9 @@ const DashboardHome = ({data,profile,goTo,onSwitchProfile}) => {
 
       <SectionTitle t={t}>Santé</SectionTitle>
       {cardGrid(healthCards)}
+
+      <SectionTitle t={t}>Développement & Activités</SectionTitle>
+      {cardGrid(devCards)}
 
       <SectionTitle t={t}>Souvenirs & Réglages</SectionTitle>
       {cardGrid(memoryCards)}

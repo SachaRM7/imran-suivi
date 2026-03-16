@@ -59,16 +59,18 @@ const BottlesSection = ({data,update}) => {
       ))}
 
       {olderB.length>0&&(
-        <details style={{marginTop:14}}>
-          <summary style={{fontSize:13,fontWeight:700,color:t.textMuted,cursor:"pointer",padding:"8px 0"}}>Historique ({olderB.length})</summary>
-          {olderB.slice(0,50).map(b=>(
+        <div style={{marginTop:18}}>
+          <div style={{fontSize:12,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
+            Historique ({olderB.length})
+          </div>
+          {olderB.slice(0,80).map(b=>(
             <div key={b.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${t.cardBorder}`,fontSize:13}}>
               <span style={{flex:1,fontWeight:700}}>{b.amount} ml</span>
               <span style={{color:t.textMuted}}>{fmt(b.time)} {fmtTime(b.time)}</span>
               <IconBtn onClick={()=>remove(b.id)}>🗑</IconBtn>
             </div>
           ))}
-        </details>
+        </div>
       )}
 
       <Modal open={modal} onClose={()=>setModal(false)} title="Ajouter un biberon">

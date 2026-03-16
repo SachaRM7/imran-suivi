@@ -188,9 +188,11 @@ const DiapersSection = ({data,update}) => {
       })}
 
       {olderD.length>0&&(
-        <details style={{marginTop:14}}>
-          <summary style={{fontSize:13,fontWeight:700,color:t.textMuted,cursor:"pointer",padding:"8px 0"}}>Historique ({olderD.length})</summary>
-          {olderD.slice(0,50).map(d=>{
+        <div style={{marginTop:18}}>
+          <div style={{fontSize:12,fontWeight:800,color:t.textSoft,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
+            Historique ({olderD.length})
+          </div>
+          {olderD.slice(0,80).map(d=>{
             const detail=diaperDetail(d);
             return (
               <div key={d.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${t.cardBorder}`,fontSize:13}}>
@@ -201,7 +203,7 @@ const DiapersSection = ({data,update}) => {
               </div>
             );
           })}
-        </details>
+        </div>
       )}
 
       <Modal open={modal} onClose={()=>setModal(false)} title="Couche">

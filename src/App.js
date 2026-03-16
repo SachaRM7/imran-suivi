@@ -129,7 +129,7 @@ export default function App() {
     bottles: <BottlesSection data={data} update={update} />,
     diapers: <DiapersSection data={data} update={update} />,
     sleep: <SleepSection data={data} update={update} />,
-    food: <FoodSection data={data} update={update} />,
+    food: <FoodSection data={data} update={update} goTo={setSection} />,
     recipes: <RecipesSection data={data} update={update} />,
     routines: <RoutinesSection data={data} update={update} />,
     exercises: <ExercisesSection data={data} update={update} profile={profile} />,
@@ -147,11 +147,11 @@ export default function App() {
   };
 
   const navItems = [
-    {key:"home",emoji:"🏠",label:"Accueil"},
+    {key:"home",  emoji:"🏠",label:"Accueil"},
     {key:"bottles",emoji:"🍼",label:"Biberons"},
-    {key:"food",emoji:"🥕",label:"Aliments"},
-    {key:"milestones",emoji:"🏆",label:"Étapes"},
-    {key:"notes",emoji:"📝",label:"Journal"},
+    {key:"diapers",emoji:"🧷",label:"Couches"},
+    {key:"sleep",  emoji:"😴",label:"Sommeil"},
+    {key:"notes",  emoji:"📝",label:"Journal"},
   ];
 
   return (

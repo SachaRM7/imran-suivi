@@ -12,7 +12,7 @@ const placeholders = {
   "Laitiers":  "Ex: Petit suisse",
 };
 
-const FoodSection = ({data,update}) => {
+const FoodSection = ({data,update,goTo}) => {
   const t=useTheme();
   const [cat,setCat]=useState("Légumes");
   const [modal,setModal]=useState(false);
@@ -76,6 +76,21 @@ const FoodSection = ({data,update}) => {
           <span style={{color:CAT_COLORS[cat],fontWeight:700,fontSize:13}}>+ Ajouter</span>
         </div>
       </div>
+
+      {goTo&&(
+        <div onClick={()=>goTo("recipes")} style={{
+          marginTop:18,padding:"13px 16px",borderRadius:16,cursor:"pointer",
+          background:t.chipBg,border:`1.5px dashed ${t.chipBorder}`,
+          display:"flex",alignItems:"center",gap:10,
+        }}>
+          <span style={{fontSize:22}}>🍳</span>
+          <div>
+            <div style={{fontWeight:700,fontSize:14,color:t.text}}>Voir les recettes</div>
+            <div style={{fontSize:12,color:t.textMuted}}>Recettes compatibles avec les aliments goûtés</div>
+          </div>
+          <span style={{color:t.textMuted,fontSize:18,marginLeft:"auto"}}>›</span>
+        </div>
+      )}
 
       <Modal open={modal} onClose={()=>setModal(false)} title={`Ajouter — ${cat}`}>
         <Input
