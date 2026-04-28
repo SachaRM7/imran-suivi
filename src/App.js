@@ -4,16 +4,18 @@ import { subscribeToProfilesMeta, saveProfilesMeta, subscribeToProfileData, save
 // ─── Theme system ───
 const THEMES = {
   light: {
-    bg: "#FAFAF9", card: "#fff", border: "#F3F4F6", text: "#1F2937",
-    textMuted: "#9CA3AF", subtle: "#F9FAFB", input: "#fff", inputBorder: "#E5E7EB",
-    navBg: "#fff", navBorder: "#F3F4F6", dayNavBg: "#F3F4F6", headerBg: "#FAFAF9",
-    accentGrad: "linear-gradient(135deg, #7C3AED, #6366F1)",
+    bg: "#FBF7EF", card: "#FFFDF8", cardBg: "#FFFDF8", border: "#E9DED0", text: "#10233F",
+    textMuted: "#718093", subtle: "#F5EFE5", input: "#FFFDF8", inputBorder: "#DED2C2",
+    navBg: "#FFFDF8", navBorder: "#E9DED0", dayNavBg: "#FFF9F0", headerBg: "#FBF7EF",
+    accent: "#5F936D", accentSoft: "#EAF3E9", coral: "#E96F4F", sky: "#DCEEFF",
+    yellow: "#FFF4D8", lavender: "#EFE8FA", accentGrad: "linear-gradient(135deg, #75A47A, #4F8464)",
   },
   dark: {
-    bg: "#0F0F14", card: "#1A1A24", border: "#2D2D3A", text: "#F1F0F5",
-    textMuted: "#6B7280", subtle: "#1F1F2E", input: "#1F1F2E", inputBorder: "#3D3D50",
-    navBg: "#1A1A24", navBorder: "#2D2D3A", dayNavBg: "#1F1F2E", headerBg: "#0F0F14",
-    accentGrad: "linear-gradient(135deg, #7C3AED, #6366F1)",
+    bg: "#101820", card: "#16232D", cardBg: "#16232D", border: "#29404D", text: "#F5F0E7",
+    textMuted: "#95A3AD", subtle: "#1E3039", input: "#13232B", inputBorder: "#36515F",
+    navBg: "#16232D", navBorder: "#29404D", dayNavBg: "#1E3039", headerBg: "#101820",
+    accent: "#86B88C", accentSoft: "#20392B", coral: "#F18A6F", sky: "#203A50",
+    yellow: "#3C321B", lavender: "#2C2740", accentGrad: "linear-gradient(135deg, #86B88C, #5F936D)",
   },
 };
 const ThemeContext = createContext({ theme: THEMES.light, darkMode: false, toggleDark: () => {} });
@@ -248,19 +250,27 @@ const prevDateStr = (ds) => { const d = new Date(ds + "T12:00:00"); d.setDate(d.
 
 // ─── Shared CSS ───
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fraunces:opsz,wght@9..144,650;9..144,750&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Nunito', sans-serif; background: #FAFAF9; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
-input, textarea, select { font-family: 'Nunito', sans-serif; }
+html { background: #FBF7EF; }
+body { font-family: 'Nunito', sans-serif; background: #FBF7EF; color: #10233F; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+button, input, textarea, select { font-family: 'Nunito', sans-serif; }
+button { touch-action: manipulation; }
 @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes syncPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes softEnter { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 ::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
-.nav-fixed { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+::-webkit-scrollbar-thumb { background: #D7C7B6; border-radius: 3px; }
+.screen-shell { animation: softEnter .35s ease both; }
+.display-font { font-family: 'Fraunces', Georgia, serif; letter-spacing: 0; }
+.nav-fixed { padding-bottom: max(14px, env(safe-area-inset-bottom, 14px)); }
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .nav-fixed { padding-bottom: env(safe-area-inset-bottom) !important; }
+}
+@media (min-width: 760px) {
+  body { background: radial-gradient(circle at top left, #FFFFFF 0, #FBF7EF 42%, #F4EBDD 100%); }
 }
 `;
 
@@ -268,11 +278,12 @@ input, textarea, select { font-family: 'Nunito', sans-serif; }
 const Modal = ({ open, onClose, title, children }) => {
   const { theme } = useTheme();
   if (!open) return null;
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: theme.card, borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 500, maxHeight: "88vh", overflow: "auto", padding: "20px 20px 36px", boxShadow: "0 -10px 50px rgba(0,0,0,0.25)", animation: "slideUp .3s cubic-bezier(.16,1,.3,1)" }}>
-        <div style={{ width: 36, height: 4, background: theme.border, borderRadius: 4, margin: "0 auto 18px" }} />
-        {title && <h3 style={{ margin: "0 0 18px", fontSize: 19, fontWeight: 800, color: theme.text }}>{title}</h3>}
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(16,35,63,0.42)", backdropFilter: "blur(10px)", display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: "26px 26px 0 0", width: "100%", maxWidth: 520, maxHeight: "88vh", overflow: "auto", padding: "18px 18px 34px", boxShadow: "0 -24px 70px rgba(16,35,63,0.22)", animation: "slideUp .3s cubic-bezier(.16,1,.3,1)" }}>
+        <div style={{ width: 42, height: 4, background: theme.border, borderRadius: 4, margin: "0 auto 18px" }} />
+        {title && <h3 className="display-font" style={{ margin: "0 0 18px", fontSize: 24, fontWeight: 750, color: theme.text }}>{title}</h3>}
         {children}
       </div>
     </div>
@@ -283,9 +294,9 @@ const Input = ({ label, ...props }) => {
   const { theme } = useTheme();
   return (
     <div style={{ marginBottom: 14 }}>
-      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
-      <input {...props} style={{ width: "100%", padding: "11px 14px", borderRadius: 14, border: `2px solid ${theme.inputBorder}`, fontSize: 15, outline: "none", boxSizing: "border-box", background: theme.input, color: theme.text, transition: "border-color .2s, box-shadow .2s", ...props.style }}
-        onFocus={e => { e.target.style.borderColor = "#A78BFA"; e.target.style.boxShadow = "0 0 0 3px rgba(167,139,250,0.15)"; }}
+      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: theme.textMuted, marginBottom: 6, letterSpacing: 0 }}>{label}</label>}
+      <input {...props} style={{ width: "100%", minHeight: 48, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${theme.inputBorder}`, fontSize: 16, outline: "none", boxSizing: "border-box", background: theme.input, color: theme.text, transition: "border-color .2s, box-shadow .2s, background .2s", ...props.style }}
+        onFocus={e => { e.target.style.borderColor = theme.accent; e.target.style.boxShadow = "0 0 0 4px rgba(95,147,109,0.16)"; }}
         onBlur={e => { e.target.style.borderColor = theme.inputBorder; e.target.style.boxShadow = "none"; }} />
     </div>
   );
@@ -294,19 +305,20 @@ const Input = ({ label, ...props }) => {
 const Btn = ({ children, variant = "primary", small, full, ...props }) => {
   const { theme } = useTheme();
   const styles = {
-    primary: { background: "linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)", color: "#fff", boxShadow: "0 4px 14px rgba(129,140,248,0.35)" },
-    secondary: { background: theme.subtle, color: "#7C3AED", boxShadow: "none" },
+    primary: { background: theme.accentGrad, color: "#fff", boxShadow: "0 10px 24px rgba(95,147,109,0.28)" },
+    secondary: { background: theme.accentSoft, color: theme.accent, boxShadow: "none", border: `1px solid ${theme.border}` },
     danger: { background: "#FEF2F2", color: "#DC2626", boxShadow: "none" },
     success: { background: "#ECFDF5", color: "#059669", boxShadow: "none" },
-    ghost: { background: "transparent", color: "#7C3AED", boxShadow: "none" },
+    ghost: { background: "transparent", color: theme.accent, boxShadow: "none" },
   };
   return (
     <button {...props} style={{
-      ...styles[variant], border: "none", borderRadius: 14,
-      padding: small ? "8px 14px" : "12px 20px",
-      fontSize: small ? 13 : 15, fontWeight: 700, cursor: "pointer",
+      ...styles[variant], border: styles[variant]?.border || "none", borderRadius: 12,
+      padding: small ? "9px 14px" : "13px 20px",
+      minHeight: small ? 38 : 48,
+      fontSize: small ? 13 : 16, fontWeight: 800, cursor: "pointer",
       display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-      transition: "transform .1s, opacity .15s",
+      transition: "transform .1s, opacity .15s, box-shadow .2s",
       width: full ? "100%" : "auto",
       ...props.style
     }}
@@ -321,10 +333,10 @@ const Chip = ({ children, active, onClick, color = "#A78BFA" }) => {
   const { theme } = useTheme();
   return (
     <span onClick={onClick} style={{
-      display: "inline-flex", alignItems: "center", padding: "7px 14px", borderRadius: 20,
+      display: "inline-flex", alignItems: "center", padding: "7px 12px", borderRadius: 999,
       fontSize: 13, fontWeight: 700, cursor: onClick ? "pointer" : "default",
       background: active ? color : theme.subtle, color: active ? "#fff" : theme.textMuted,
-      border: active ? "none" : `1.5px solid ${theme.border}`, transition: "all .2s", whiteSpace: "nowrap"
+      border: active ? `1px solid ${color}` : `1px solid ${theme.border}`, transition: "all .2s", whiteSpace: "nowrap"
     }}>{children}</span>
   );
 };
@@ -333,26 +345,26 @@ const Card = ({ children, onClick, highlighted, style: s }) => {
   const { theme } = useTheme();
   return (
     <div onClick={onClick} style={{
-      background: theme.card, borderRadius: 18, padding: "14px 16px",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: highlighted ? "2px solid #C4B5FD" : `1.5px solid ${theme.border}`,
+      background: theme.card, borderRadius: 12, padding: "14px 16px",
+      boxShadow: "0 10px 30px rgba(16,35,63,0.06)", border: highlighted ? `1.5px solid ${theme.accent}` : `1px solid ${theme.border}`,
       transition: "transform .15s, box-shadow .15s", cursor: onClick ? "pointer" : "default",
       ...(s || {})
     }}
-      onMouseEnter={e => onClick && (e.currentTarget.style.transform = "translateY(-1px)")}
+      onMouseEnter={e => onClick && (e.currentTarget.style.transform = "translateY(-2px)")}
       onMouseLeave={e => onClick && (e.currentTarget.style.transform = "")}
     >{children}</div>
   );
 };
 
 const IconBtn = ({ onClick, children }) => (
-  <span onClick={onClick} style={{ cursor: "pointer", color: "#6B7280", display: "inline-flex", padding: 4, borderRadius: 8, transition: "color .15s" }}
-    onMouseEnter={e => e.currentTarget.style.color = "#EF4444"}
-    onMouseLeave={e => e.currentTarget.style.color = "#6B7280"}
+  <span onClick={onClick} style={{ cursor: "pointer", color: "#718093", display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 34, minHeight: 34, padding: 6, borderRadius: 10, background: "rgba(255,255,255,0.38)", border: "1px solid rgba(16,35,63,0.08)", transition: "color .15s, background .15s" }}
+    onMouseEnter={e => { e.currentTarget.style.color = "#E96F4F"; e.currentTarget.style.background = "#FEF2F2"; }}
+    onMouseLeave={e => { e.currentTarget.style.color = "#718093"; e.currentTarget.style.background = "rgba(255,255,255,0.38)"; }}
   >{children}</span>
 );
 
 const SyncBadge = ({ syncing }) => (
-  <div style={{ position: "fixed", top: 12, right: 12, zIndex: 999, display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: syncing ? "#FEF3C7" : "#ECFDF5", fontSize: 11, fontWeight: 700, color: syncing ? "#D97706" : "#059669", animation: syncing ? "syncPulse 1s infinite" : "none" }}>
+  <div style={{ position: "fixed", top: 12, right: 12, zIndex: 999, display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: syncing ? "#FEF3C7" : "#ECFDF5", border: "1px solid rgba(16,35,63,0.08)", boxShadow: "0 10px 30px rgba(16,35,63,0.08)", fontSize: 11, fontWeight: 800, color: syncing ? "#D97706" : "#166534", animation: syncing ? "syncPulse 1s infinite" : "none" }}>
     <span style={{ width: 6, height: 6, borderRadius: "50%", background: syncing ? "#F59E0B" : "#10B981" }} />
     {syncing ? "Sync..." : "Connecté"}
   </div>
@@ -488,7 +500,7 @@ const ProfileSelector = ({ profiles, onSelect, onAdd }) => {
 
 // ─── SECTION: Dashboard Home ───
 const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
-  const { darkMode, toggleDark } = useTheme();
+  const { theme, darkMode, toggleDark } = useTheme();
   const age = babyAgeText(data.baby.birthDate);
   const todayB = todayItems(data.bottles);
   const todayD = todayItems(data.diapers);
@@ -517,11 +529,12 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
   const alertWarn = hB > 3 || hD > 3 || hS > 3;
 
   const cards = [
-    { key: "bottles", emoji: "🍼", label: "Biberons", value: `${todayB.length} — ${totalMl} ml`, color: "#818CF8" },
-    { key: "diapers", emoji: "🧷", label: "Couches", value: `${todayD.length} changées`, color: "#F59E0B" },
-    { key: "sleep", emoji: "😴", label: "Sommeil", value: `${todayS.length} siestes`, color: "#6366F1" },
+    { key: "bottles", emoji: "🍼", label: "Biberons", value: `${todayB.length} — ${totalMl} ml`, color: theme.accent, bg: theme.accentSoft },
+    { key: "diapers", emoji: "🧷", label: "Changes", value: `${todayD.length} changés`, color: "#D97904", bg: theme.yellow },
+    { key: "sleep", emoji: "🌙", label: "Sommeil", value: `${todayS.length} siestes`, color: "#2F6EA3", bg: theme.sky },
+    { key: "temperature", emoji: "♡", label: "Santé", value: (data.temperature||[]).length ? `${data.temperature[data.temperature.length-1].value}°C` : "Tout va bien", color: "#7C5CAD", bg: theme.lavender },
     { key: "food", emoji: "🥕", label: "Diversification", value: `${foodCount} aliments`, color: "#10B981" },
-    { key: "growth", emoji: "📏", label: "Croissance", value: lastGrowth ? `${lastGrowth.weight || "?"}kg · ${lastGrowth.height || "?"}cm` : "—", color: "#EC4899" },
+    { key: "growth", emoji: "📏", label: "Croissance", value: lastGrowth ? `${lastGrowth.weight || "?"}kg · ${lastGrowth.height || "?"}cm` : "—", color: theme.accent },
     { key: "teeth", emoji: "🦷", label: "Dents", value: `${teethCount}/20`, color: "#F97316" },
     { key: "milestones", emoji: "🏆", label: "Étapes", value: "Voir progrès", color: "#8B5CF6" },
     { key: "appointments", emoji: "📅", label: "RDV", value: nextAppt ? `${fmt(nextAppt.date)}` : "Aucun prévu", color: "#0EA5E9" },
@@ -536,51 +549,94 @@ const DashboardHome = ({ data, goTo, onSwitchProfile }) => {
     { key: "pdf", emoji: "📄", label: "Rapport PDF", value: "Exporter le jour", color: "#6366F1" },
   ];
 
+  const quickCards = cards.slice(0, 4);
+  const latestActivity = [
+    ...todayB.map(b => ({ type: "Biberon", time: b.time, detail: `${b.amount || 0} ml${b.content ? " · " + b.content : ""}`, color: theme.accent, emoji: "🍼" })),
+    ...todayS.map(s => ({ type: s.end ? "Sommeil terminé" : "Sommeil début", time: s.end || s.start, detail: s.end ? `${fmtTime(s.start)} - ${fmtTime(s.end)}` : "En cours", color: "#2F6EA3", emoji: "🌙" })),
+    ...todayD.map(d => ({ type: "Change", time: d.time, detail: d.type || "Noté", color: "#D97904", emoji: "🧷" })),
+  ].filter(x => x.time).sort((a, b) => b.time.localeCompare(a.time)).slice(0, 5);
+
   return (
-    <div>
-      {/* Hero */}
-      <div style={{ background: "linear-gradient(135deg, #C4B5FD 0%, #A78BFA 35%, #818CF8 70%, #6366F1 100%)", borderRadius: 28, padding: "28px 24px 24px", marginBottom: 20, color: "#fff", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }} />
-        <div style={{ position: "absolute", bottom: -25, left: 20, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
-        <div style={{ position: "absolute", top: 14, right: 16, display: "flex", gap: 6 }}>
+    <div className="screen-shell">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 2px 14px" }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="display-font" style={{ fontSize: 30, fontWeight: 750, color: theme.text, lineHeight: 1 }}>Suivi Imran</div>
+          <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: theme.textMuted }}>
+            {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
           {onSwitchProfile && (
-            <button onClick={onSwitchProfile} style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 13, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>Changer ↩</button>
+            <button aria-label="Changer de profil" onClick={onSwitchProfile} style={{ width: 42, height: 42, border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.card, color: theme.text, fontWeight: 900, cursor: "pointer" }}>↩</button>
           )}
-          <button onClick={toggleDark} style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer", color: "#fff", fontWeight: 700, lineHeight: 1 }}>
-            {darkMode ? "☀️" : "🌙"}
+          <button aria-label="Changer le thème" onClick={toggleDark} style={{ width: 42, height: 42, border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.card, color: theme.text, fontSize: 16, cursor: "pointer" }}>
+            {darkMode ? "☀️" : "☾"}
           </button>
         </div>
-        <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
-          {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-        </div>
-        <div style={{ fontSize: 30, fontWeight: 900, marginTop: 6 }}>{data.baby.name || "Bébé"} 👶</div>
-        {age && <div style={{ fontSize: 15, marginTop: 4, opacity: 0.9, fontWeight: 600 }}>{age}</div>}
       </div>
 
-      {/* Alert banner */}
+      <Card style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, padding: 14 }}>
+        <div style={{ width: 58, height: 58, borderRadius: 14, background: theme.accentSoft, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900 }}>♡</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 21, fontWeight: 900, color: theme.text }}>{data.baby.name || "Bébé"}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted, marginTop: 2 }}>{age || "Profil bébé"}</div>
+          {data.baby.birthDate && <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>Né le {fmtFull(data.baby.birthDate)}</div>}
+        </div>
+        <button onClick={() => goTo("growth")} aria-label="Voir la croissance" style={{ border: "none", background: theme.subtle, color: theme.text, borderRadius: 10, width: 38, height: 38, fontSize: 20, cursor: "pointer" }}>›</button>
+      </Card>
+
       {!alertDismissed && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: alertWarn ? "#FFFBEB" : "#F0FDF4", border: `1.5px solid ${alertWarn ? "#FDE68A" : "#86EFAC"}`, borderRadius: 14, padding: "10px 14px", marginBottom: 14 }}>
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: alertWarn ? "#92400E" : "#166534" }}>{alertMsg}</span>
-          <button onClick={() => setAlertDismissed(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#9CA3AF", padding: "0 2px", lineHeight: 1 }}>✕</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: alertWarn ? "#FFFBEB" : theme.accentSoft, border: `1px solid ${alertWarn ? "#F2C56B" : "#BED8BD"}`, borderRadius: 12, padding: "11px 12px", marginBottom: 14 }}>
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 800, color: alertWarn ? "#8B4A00" : "#315F3A" }}>{alertMsg}</span>
+          <button aria-label="Masquer l'alerte" onClick={() => setAlertDismissed(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 16, color: theme.textMuted, padding: "4px 6px", lineHeight: 1 }}>×</button>
         </div>
       )}
 
-      {/* Quick stats */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, overflowX: "auto", paddingBottom: 2 }}>
-        {[{ e: "🍼", v: `${totalMl}ml`, k: "bottles" }, { e: "🧷", v: todayD.length, k: "diapers" }, { e: "😴", v: todayS.length, k: "sleep" }, { e: "🦷", v: teethCount, k: "teeth" }].map((s, i) => (
-          <div key={i} onClick={() => goTo(s.k)} style={{ flex: "0 0 auto", background: "#fff", borderRadius: 14, padding: "9px 16px", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 1px 4px rgba(0,0,0,0.04)", border: "1.5px solid #F3F4F6", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>
-            <span style={{ fontSize: 18 }}>{s.e}</span> {s.v}
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+        {quickCards.map(c => (
+          <button key={c.key} onClick={() => goTo(c.key)} style={{ minHeight: 118, textAlign: "left", background: c.bg || theme.card, border: `1px solid ${c.color}33`, borderRadius: 12, padding: 14, cursor: "pointer", color: theme.text, boxShadow: "0 10px 26px rgba(16,35,63,0.05)" }}>
+            <div style={{ fontSize: 28, lineHeight: 1, marginBottom: 12 }}>{c.emoji}</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: c.color }}>{c.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1.2, marginTop: 4, color: theme.text }}>{c.value.split("—")[0].trim()}</div>
+            {c.value.includes("—") && <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginTop: 2 }}>{c.value.split("—")[1].trim()}</div>}
+          </button>
         ))}
       </div>
 
-      {/* Grid */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "2px 2px 10px" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 900, color: theme.text }}>Routine du jour</h2>
+        <Btn small variant="ghost" onClick={() => goTo("routines")}>Voir</Btn>
+      </div>
+
+      <Card style={{ marginBottom: 18, padding: 0, overflow: "hidden" }}>
+        {latestActivity.length ? latestActivity.map((item, i) => (
+          <div key={`${item.type}-${item.time}-${i}`} style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: i === latestActivity.length - 1 ? "none" : `1px solid ${theme.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: theme.text }}>{fmtTime(item.time)}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <span style={{ width: 34, height: 34, borderRadius: 10, background: `${item.color}18`, color: item.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{item.emoji}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 900, color: theme.text }}>{item.type}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.detail}</div>
+              </div>
+            </div>
+            <button onClick={() => goTo(item.type.includes("Sommeil") ? "sleep" : item.type === "Change" ? "diapers" : "bottles")} aria-label={`Voir ${item.type}`} style={{ border: "none", background: theme.subtle, color: theme.textMuted, width: 32, height: 32, borderRadius: 10, cursor: "pointer", fontSize: 18 }}>›</button>
+          </div>
+        )) : <EmptyState emoji="♡" text="Aucune activité aujourd'hui" />}
+      </Card>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "2px 2px 10px" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 900, color: theme.text }}>Plus de suivi</h2>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {cards.map(c => (
-          <Card key={c.key} onClick={() => goTo(c.key)}>
-            <div style={{ fontSize: 26, marginBottom: 6 }}>{c.emoji}</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#1F2937" }}>{c.label}</div>
-            <div style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, marginTop: 2 }}>{c.value}</div>
+        {cards.slice(4).map(c => (
+          <Card key={c.key} onClick={() => goTo(c.key)} style={{ minHeight: 92 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 10, background: `${c.color}18`, color: c.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{c.emoji}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: theme.text }}>{c.label}</div>
+                <div style={{ fontSize: 11, color: theme.textMuted, fontWeight: 700, marginTop: 2 }}>{c.value}</div>
+              </div>
+            </div>
           </Card>
         ))}
       </div>
@@ -625,10 +681,10 @@ const useSwipeDay = () => {
 const DayNav = ({ dateLabel, dayOffset, goToday, prev, next }) => {
   const { theme } = useTheme();
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.dayNavBg, borderRadius: 12, padding: "8px 14px", marginBottom: 14 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.dayNavBg, border: `1px solid ${theme.border}`, borderRadius: 12, padding: "8px 10px", marginBottom: 14, boxShadow: "0 8px 24px rgba(16,35,63,0.04)" }}>
       <button onClick={prev} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: theme.textMuted }}>◀</button>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{dateLabel}</span>
+        <span style={{ fontWeight: 900, fontSize: 14, color: theme.text }}>{dateLabel}</span>
         {dayOffset !== 0 && <button onClick={goToday} style={{ background: "#6366F1", color: "#fff", border: "none", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Aujourd'hui ↩</button>}
       </div>
       <button onClick={next} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, padding: "0 4px", color: dayOffset === 0 ? theme.border : theme.textMuted }} disabled={dayOffset === 0}>▶</button>
@@ -703,6 +759,12 @@ const BottlesSection = ({ data, update }) => {
   const remove = (id) => update(d => { d.bottles = d.bottles.filter(b => b.id !== id); });
   const dayB = (data.bottles||[]).filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
   const totalMl = dayB.reduce((s, b) => s + (b.amount || 0), 0);
+  const lastBottle = dayB[0];
+  const avgMl = dayB.length ? Math.round(totalMl / dayB.length) : 0;
+  const sortedAsc = [...dayB].sort((a, b) => a.time.localeCompare(b.time));
+  const avgInterval = sortedAsc.length > 1
+    ? Math.round(sortedAsc.slice(1).reduce((sum, b, i) => sum + (new Date(b.time) - new Date(sortedAsc[i].time)) / 60000, 0) / (sortedAsc.length - 1))
+    : 0;
 
   const LEGACY_CONTENT_LABELS = { "lait+eau": "🥛💧 Lait+Eau" };
   const contentTag = (b) => {
@@ -713,9 +775,9 @@ const BottlesSection = ({ data, update }) => {
   };
 
   return (
-    <div ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div>
+    <div ref={containerRef} className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: theme.text }}>🍼 Biberons</div>
           <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{dayB.length} biberon{dayB.length > 1 ? "s" : ""} — {totalMl} ml</div>
         </div>
@@ -724,27 +786,51 @@ const BottlesSection = ({ data, update }) => {
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        {[
+          ["Total", `${totalMl} ml`, theme.accent, theme.accentSoft],
+          ["Moyenne", avgMl ? `${avgMl} ml` : "—", "#2F6EA3", theme.sky],
+          ["Intervalle", avgInterval ? `${Math.floor(avgInterval / 60)}h${String(avgInterval % 60).padStart(2, "0")}` : "—", theme.coral, "#FFF0E8"],
+        ].map(([label, value, color, bg]) => (
+          <div key={label} style={{ minHeight: 74, borderRadius: 12, padding: "11px 10px", background: bg, border: `1px solid ${color}2E`, boxShadow: "0 8px 20px rgba(16,35,63,0.04)" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color, marginBottom: 8 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: theme.text, lineHeight: 1 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {lastBottle && (
+        <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 42, height: 42, borderRadius: 13, background: theme.accentSoft, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🍼</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: theme.textMuted }}>Dernier biberon</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: theme.text }}>{lastBottle.amount} ml <span style={{ fontSize: 13, color: theme.textMuted }}>{fmtTime(lastBottle.time)}</span></div>
+          </div>
+        </Card>
+      )}
+
       {dayOffset === 0 && (
         <>
-          <div style={{ display: "flex", gap: 7, marginBottom: pendingMl ? 10 : 18, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14, fontWeight: 900, color: theme.text, margin: "2px 2px 10px" }}>Quantité rapide</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: pendingMl ? 10 : 18 }}>
             {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
-              <Btn key={ml} variant={pendingMl === ml ? "primary" : "secondary"} small onClick={() => handleQuickMl(ml)}>{ml}ml</Btn>
+              <button key={ml} onClick={() => handleQuickMl(ml)} style={{ minHeight: 48, borderRadius: 12, border: `1px solid ${pendingMl === ml ? theme.accent : theme.border}`, background: pendingMl === ml ? theme.accentGrad : theme.card, color: pendingMl === ml ? "#fff" : theme.text, fontSize: 14, fontWeight: 900, cursor: "pointer", boxShadow: pendingMl === ml ? "0 10px 22px rgba(95,147,109,0.24)" : "0 8px 20px rgba(16,35,63,0.04)" }}>{ml}<span style={{ fontSize: 11, opacity: 0.75 }}> ml</span></button>
             ))}
           </div>
           {/* Sélecteur contenu (entonnoir) */}
-          <div style={{ overflow: "hidden", maxHeight: pendingMl ? 110 : 0, opacity: pendingMl ? 1 : 0, transition: "max-height .3s ease, opacity .25s ease", marginBottom: pendingMl ? 18 : 0 }}>
-            <div style={{ background: theme.subtle, borderRadius: 14, padding: "12px 12px 14px", border: `1.5px solid ${theme.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, marginBottom: 9, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ overflow: "hidden", maxHeight: pendingMl ? 150 : 0, opacity: pendingMl ? 1 : 0, transition: "max-height .3s ease, opacity .25s ease", marginBottom: pendingMl ? 18 : 0 }}>
+            <div style={{ background: theme.accentSoft, borderRadius: 12, padding: "13px 12px 14px", border: `1px solid ${theme.accent}33`, boxShadow: "0 10px 26px rgba(16,35,63,0.05)" }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: theme.accent, marginBottom: 10 }}>
                 {pendingMl} ml — Contenu ?{" "}
                 <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, opacity: 0.7 }}>Lait auto dans 5 s</span>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {BOTTLE_CONTENTS.map(c => (
                   <button key={c.key} onClick={() => confirmContent(c.key)} style={{
-                    flex: 1, padding: "10px 4px", borderRadius: 10,
-                    border: `2px solid ${theme.border}`, background: theme.card,
+                    flex: 1, minHeight: 74, padding: "10px 4px", borderRadius: 12,
+                    border: `1px solid ${theme.border}`, background: theme.card,
                     cursor: "pointer", fontWeight: 700, fontSize: 11, color: theme.text,
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 3, transition: "all .15s"
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, transition: "all .15s"
                   }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "#818CF8"; e.currentTarget.style.background = "#EEF2FF"; e.currentTarget.style.color = "#4338CA"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.background = theme.card; e.currentTarget.style.color = theme.text; }}>
@@ -759,7 +845,7 @@ const BottlesSection = ({ data, update }) => {
       )}
 
       {sleepWarn && (
-        <div style={{ background: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+        <div style={{ background: "#FFFBEB", border: "1px solid #F2C56B", borderRadius: 12, padding: "12px 14px", marginBottom: 12, boxShadow: "0 10px 24px rgba(146,64,14,0.08)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#92400E", marginBottom: 8 }}>⚠️ Un sommeil est en cours et n'a pas été terminé.</div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn small onClick={() => { update(d => { const s = d.sleep.find(x => !x.end); if (s) s.end = nowStr(); }); setSleepWarn(false); }}>Terminer le sommeil</Btn>
@@ -768,8 +854,12 @@ const BottlesSection = ({ data, update }) => {
         </div>
       )}
       {dayB.length === 0 && <EmptyState emoji="🍼" text={`Aucun biberon — ${dateLabel}`} />}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 2px 10px" }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: theme.text }}>Historique</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted }}>{dayB.length} entrée{dayB.length > 1 ? "s" : ""}</div>
+      </div>
       {dayB.map(b => (
-        <Card key={b.id} onClick={() => openEdit(b)} style={{ marginBottom: 8, cursor: "pointer" }}>
+        <Card key={b.id} onClick={() => openEdit(b)} style={{ marginBottom: 10, cursor: "pointer", padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 24, marginRight: 14 }}>🍼</span>
             <div style={{ flex: 1 }}>
@@ -798,6 +888,11 @@ const BottlesSection = ({ data, update }) => {
 
       <Modal open={modal} onClose={() => { setModal(false); setEditId(null); }} title={editId ? "Modifier le biberon" : "Ajouter un biberon"}>
         <Input label="Quantité (ml)" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="120" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, margin: "-4px 0 14px" }}>
+          {[60, 90, 120, 150, 180, 210, 240, 270].map(ml => (
+            <button key={ml} onClick={() => setAmount(String(ml))} style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${String(amount) === String(ml) ? theme.accent : theme.border}`, background: String(amount) === String(ml) ? theme.accentSoft : theme.card, color: String(amount) === String(ml) ? theme.accent : theme.text, fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{ml}</button>
+          ))}
+        </div>
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Contenu</label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -909,6 +1004,9 @@ const DiapersSection = ({ data, update }) => {
   };
   const remove = (id) => update(d => { d.diapers = d.diapers.filter(x => x.id !== id); });
   const todayD = (data.diapers||[]).filter(d => d.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
+  const pipiCount = todayD.filter(d => d.type === "pipi").length;
+  const cacaCount = todayD.filter(d => d.type === "caca" || d.type === "mixte").length;
+  const lastDiaper = todayD[0];
 
   const diapersLabel = (d) => {
     const parts = [TYPE_LABELS[d.type] || d.type];
@@ -922,11 +1020,12 @@ const DiapersSection = ({ data, update }) => {
   const needCaca = selectedType === "caca" || selectedType === "mixte";
 
   return (
-    <div ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>🧷 Couches</div>
-          <div style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 600 }}>{todayD.length} couche{todayD.length > 1 ? "s" : ""}</div>
+    <div ref={containerRef} className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: theme.yellow, color: "#D97904", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 10 }}>🧷</div>
+          <div className="display-font" style={{ fontSize: 28, lineHeight: 1.05, fontWeight: 750, color: theme.text }}>Change</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 800, marginTop: 4 }}>{todayD.length} change{todayD.length > 1 ? "s" : ""} aujourd'hui</div>
         </div>
         <Btn onClick={() => { setEditId(null); setTime(nowStr()); setNote(""); setQuantity(null); setConsistency(null); setColor(null); setModal(true); }} small>+ Détail</Btn>
       </div>
@@ -934,16 +1033,42 @@ const DiapersSection = ({ data, update }) => {
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
 
       {/* Étapes 1 & 2 : saisie rapide (uniquement pour aujourd'hui) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        {[
+          ["Changes", todayD.length, "#D97904", theme.yellow],
+          ["Pipi", pipiCount, "#2F6EA3", theme.sky],
+          ["Caca / mixte", cacaCount, "#8B5A2B", "#FFF3E5"],
+        ].map(([label, value, color, bg]) => (
+          <div key={label} style={{ minHeight: 76, borderRadius: 12, padding: "11px 10px", background: bg, border: `1px solid ${color}2E`, boxShadow: "0 8px 20px rgba(16,35,63,0.04)" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color, marginBottom: 8 }}>{label}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: theme.text, lineHeight: 1 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {lastDiaper && (
+        <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 42, height: 42, borderRadius: 13, background: theme.yellow, color: "#D97904", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{TYPE_EMOJIS[lastDiaper.type] || "🧷"}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: theme.textMuted }}>Dernier change</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: theme.text }}>{diapersLabel(lastDiaper)} <span style={{ fontSize: 13, color: theme.textMuted }}>{fmtTime(lastDiaper.time)}</span></div>
+          </div>
+        </Card>
+      )}
+
       {dayOffset === 0 && (
         <>
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 900, color: theme.text, margin: "2px 2px 10px" }}>Ajout rapide</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
             {["pipi", "caca", "mixte"].map(t => (
               <button key={t} onClick={() => handleTypeSelect(t)} style={{
-                flex: 1, padding: "14px 8px", borderRadius: 14,
-                border: `2px solid ${selectedType === t ? "#F59E0B" : "#E5E7EB"}`,
-                background: selectedType === t ? "#FEF3C7" : "#F9FAFB",
+                minHeight: 104, padding: "14px 8px", borderRadius: 12,
+                border: `1.5px solid ${selectedType === t ? "#D97904" : theme.border}`,
+                background: selectedType === t ? theme.yellow : theme.card,
                 cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
-                gap: 4, fontWeight: 700, fontSize: 13, transition: "all 0.15s"
+                justifyContent: "center", gap: 8, fontWeight: 900, fontSize: 13, transition: "all 0.15s",
+                color: selectedType === t ? "#8B4A00" : theme.text,
+                boxShadow: selectedType === t ? "0 10px 24px rgba(217,121,4,0.18)" : "0 8px 20px rgba(16,35,63,0.04)"
               }}>
                 <span style={{ fontSize: 28 }}>{TYPE_EMOJIS[t]}</span>
                 {TYPE_LABELS[t]}
@@ -955,7 +1080,7 @@ const DiapersSection = ({ data, update }) => {
             transition: "max-height 0.3s ease, opacity 0.3s ease",
             opacity: selectedType ? 1 : 0, marginBottom: selectedType ? 16 : 0
           }}>
-            <div style={{ background: "#F9FAFB", borderRadius: 14, padding: 14, border: "1.5px solid #E5E7EB" }}>
+            <div style={{ background: "#FFF9EE", borderRadius: 12, padding: 14, border: "1px solid #F2C56B", boxShadow: "0 10px 24px rgba(217,121,4,0.08)" }}>
               {needPipi && (
                 <div style={{ marginBottom: needCaca ? 14 : 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Quantité 💦</div>
@@ -1012,8 +1137,14 @@ const DiapersSection = ({ data, update }) => {
         </div>
       )}
       {todayD.length === 0 && <EmptyState emoji="🧷" text={`Aucune couche — ${dateLabel}`} />}
+      {todayD.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 2px 10px" }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: theme.text }}>Historique</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted }}>{todayD.length} entrée{todayD.length > 1 ? "s" : ""}</div>
+        </div>
+      )}
       {todayD.map(d => (
-        <Card key={d.id} onClick={() => openEdit(d)} style={{ marginBottom: 8, cursor: "pointer" }}>
+        <Card key={d.id} onClick={() => openEdit(d)} style={{ marginBottom: 10, cursor: "pointer", padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 22, marginRight: 14 }}>{TYPE_EMOJIS[d.type] || "🧷"}</span>
             <div style={{ flex: 1 }}>
@@ -1127,25 +1258,58 @@ const SleepSection = ({ data, update }) => {
   const ongoing = (data.sleep||[]).find(s => !s.end);
   const isNight = ongoing?.type === "nuit";
   const dayItems = sleepForDay(data.sleep, dateStr).sort((a, b) => b.start.localeCompare(a.start));
+  const sleepMinutes = (s) => s.end ? Math.max(0, Math.round((new Date(s.end) - new Date(s.start)) / 60000)) : Math.max(0, Math.round((Date.now() - new Date(s.start)) / 60000));
+  const totalSleepMin = dayItems.reduce((sum, s) => sum + sleepMinutes(s), 0);
+  const longestSleepMin = dayItems.length ? Math.max(...dayItems.map(sleepMinutes)) : 0;
+  const fmtMinShort = (m) => m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m} min`;
   const dur = (s) => { if (!s.end) return "En cours 💤"; const m = Math.round((new Date(s.end) - new Date(s.start)) / 60000); return m >= 60 ? `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}` : `${m} min`; };
 
   return (
-    <div ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>😴 Sommeil</div>
+    <div ref={containerRef} className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: theme.sky, color: "#2F6EA3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 10 }}>🌙</div>
+          <div className="display-font" style={{ fontSize: 28, lineHeight: 1.05, fontWeight: 750, color: theme.text }}>Sommeil</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 800, marginTop: 4 }}>{dayItems.length} entrée{dayItems.length > 1 ? "s" : ""} aujourd'hui</div>
+        </div>
         <Btn onClick={() => { const t = typeFromHour(null); setEditId(null); setStart(nowStr()); setEnd(""); setType(t); setNote(""); setModal(true); }} small>+ Manuel</Btn>
       </div>
 
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        {[
+          ["Total", fmtMinShort(totalSleepMin), "#2F6EA3", theme.sky],
+          ["Sommeils", dayItems.length, "#7C5CAD", theme.lavender],
+          ["Plus long", longestSleepMin ? fmtMinShort(longestSleepMin) : "—", theme.accent, theme.accentSoft],
+        ].map(([label, value, color, bg]) => (
+          <div key={label} style={{ minHeight: 76, borderRadius: 12, padding: "11px 10px", background: bg, border: `1px solid ${color}2E`, boxShadow: "0 8px 20px rgba(16,35,63,0.04)" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color, marginBottom: 8 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: theme.text, lineHeight: 1 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {ongoing && (
+        <Card highlighted style={{ marginBottom: 14, background: theme.sky, border: "1px solid rgba(47,110,163,0.28)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 42, height: 42, borderRadius: 13, background: theme.card, color: "#2F6EA3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{isNight ? "🌙" : "💤"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: "#2F6EA3" }}>Sommeil en cours</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: theme.text }}>{fmtMinShort(sleepMinutes(ongoing))}</div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {dayOffset === 0 && (
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
           {!ongoing ? (
-            <Btn variant="secondary" full onClick={() => { const t = typeFromHour(null); update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: t, note: "" }); }); }}>
+            <Btn variant="secondary" full onClick={() => { const t = typeFromHour(null); update(d => { d.sleep.push({ id: uid(), start: nowStr(), end: null, type: t, note: "" }); }); }} style={{ minHeight: 58, background: theme.sky, color: "#2F6EA3", border: "1px solid rgba(47,110,163,0.2)" }}>
               {isNightHour(null) ? "🌙 Début nuit" : "💤 Début sieste"}
             </Btn>
           ) : (
-            <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })}>
+            <Btn variant="success" full onClick={() => update(d => { const s = d.sleep.find(x => x.id === ongoing.id); if (s) s.end = nowStr(); })} style={{ minHeight: 58 }}>
               {isNight ? `☀️ Fin de nuit (${dur(ongoing)})` : `⏰ Fin sieste (${dur(ongoing)})`}
             </Btn>
           )}
@@ -1153,6 +1317,12 @@ const SleepSection = ({ data, update }) => {
       )}
 
       {dayItems.length === 0 && <EmptyState emoji="😴" text={`Aucune sieste — ${dateLabel}`} />}
+      {dayItems.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 2px 10px" }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: theme.text }}>Historique</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted }}>{dayItems.length} entrée{dayItems.length > 1 ? "s" : ""}</div>
+        </div>
+      )}
       {dayItems.map(s => {
         const startDay = (s.start || "").slice(0, 10);
         const endDay = s.end ? s.end.slice(0, 10) : null;
@@ -1166,7 +1336,7 @@ const SleepSection = ({ data, update }) => {
               : `☀️ Réveil le ${fmt(s.end)}`)
           : null;
         return (
-        <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ marginBottom: 8, cursor: "pointer" }}>
+        <Card key={s.id} highlighted={!s.end} onClick={() => openEdit(s)} style={{ marginBottom: 10, cursor: "pointer", padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 22, marginRight: 14 }}>{!s.end ? (s.type === "nuit" ? "🌙" : "💤") : s.type === "nuit" ? "🌙" : "😴"}</span>
             <div style={{ flex: 1 }}>
@@ -1493,8 +1663,8 @@ const FoodSection = ({ data, update }) => {
     const bg = t ? (r === "allergie" ? "#FEF2F2" : r === "refusé" ? "#FFFBEB" : "#F0FDF4") : theme.card;
     const bd = t ? (r === "allergie" ? "#FECACA" : r === "refusé" ? "#FDE68A" : "#86EFAC") : isCustom ? "#C4B5FD" : theme.border;
     return (
-      <div key={food} onClick={() => toggle(food)} style={{ padding: "11px 13px", borderRadius: 14, cursor: "pointer", background: bg, border: `2px ${isCustom && !t ? "dashed" : "solid"} ${bd}`, transition: "all .2s", position: "relative" }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, paddingRight: isCustom ? 18 : 0 }}>
+      <div key={food} onClick={() => toggle(food)} style={{ minHeight: 96, padding: "12px 12px", borderRadius: 12, cursor: "pointer", background: bg, border: `1.5px ${isCustom && !t ? "dashed" : "solid"} ${bd}`, transition: "all .2s", position: "relative", boxShadow: t ? "0 10px 24px rgba(16,35,63,0.06)" : "0 8px 18px rgba(16,35,63,0.035)" }}>
+        <div style={{ fontWeight: 900, fontSize: 13, color: theme.text, paddingRight: isCustom ? 18 : 0, lineHeight: 1.25 }}>
           {t ? "✓ " : ""}{food}
           {isCustom && <span style={{ marginLeft: 5, fontSize: 10, color: "#A78BFA", fontWeight: 800 }}>✎</span>}
         </div>
@@ -1502,7 +1672,7 @@ const FoodSection = ({ data, update }) => {
           <span onClick={e => { e.stopPropagation(); deleteCustomFood(cat, food); }} style={{ position: "absolute", top: 7, right: 8, fontSize: 12, color: "#9CA3AF", cursor: "pointer", lineHeight: 1 }}>✕</span>
         )}
         {t && (
-          <div style={{ display: "flex", gap: 3, marginTop: 6 }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: "flex", gap: 5, marginTop: 10 }} onClick={e => e.stopPropagation()}>
             {[["ok","👍"],["refusé","🚫"],["allergie","⚠️"]].map(([rv, em]) => (
               <span key={rv} onClick={() => setReaction(food, rv)} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 8, fontWeight: 700, cursor: "pointer", background: r === rv ? (rv === "allergie" ? "#EF4444" : rv === "refusé" ? "#F59E0B" : "#10B981") : theme.subtle, color: r === rv ? "#fff" : theme.textMuted }}>{em}</span>
             ))}
@@ -1513,8 +1683,15 @@ const FoodSection = ({ data, update }) => {
   };
 
   return (
-    <div>
-      <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 14, color: theme.text }}>{view === "aliments" ? "🥕 Diversification" : "🍳 Recettes"}</div>
+    <div className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+        <div>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: view === "aliments" ? theme.yellow : theme.accentSoft, color: view === "aliments" ? "#D97904" : theme.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 23, marginBottom: 10 }}>{view === "aliments" ? "🥕" : "🍳"}</div>
+          <div className="display-font" style={{ fontSize: 28, lineHeight: 1.05, fontWeight: 750, color: theme.text }}>{view === "aliments" ? "Diversification" : "Recettes"}</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 800, marginTop: 4 }}>{view === "aliments" ? `${tried}/${total} aliments goûtés` : `${testedCount}/${allRecipePool.length} recettes testées`}</div>
+        </div>
+        {view === "cuisine" && <Btn onClick={openCreate} small>+ Créer</Btn>}
+      </div>
 
       {/* Toggle vue */}
       <div style={{ display: "flex", gap: 8, marginBottom: 18, background: theme.subtle, borderRadius: 12, padding: 4 }}>
@@ -1522,6 +1699,20 @@ const FoodSection = ({ data, update }) => {
           <button key={v} onClick={() => setView(v)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: view === v ? theme.card : "transparent", color: view === v ? "#7C3AED" : theme.textMuted, boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all .15s" }}>{label}</button>
         ))}
       </div>
+
+      <Card style={{ marginBottom: 16, padding: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 14, alignItems: "center" }}>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", background: `conic-gradient(${view === "aliments" ? theme.accent : "#7C5CAD"} ${view === "aliments" ? (total > 0 ? (tried / total) * 360 : 0) : (allRecipePool.length > 0 ? (testedCount / allRecipePool.length) * 360 : 0)}deg, ${theme.subtle} 0)`, display: "grid", placeItems: "center" }}>
+            <div style={{ width: 54, height: 54, borderRadius: "50%", background: theme.card, display: "grid", placeItems: "center", color: theme.text, fontSize: 18, fontWeight: 900 }}>
+              {view === "aliments" ? `${Math.round(total > 0 ? (tried / total) * 100 : 0)}%` : `${Math.round(allRecipePool.length > 0 ? (testedCount / allRecipePool.length) * 100 : 0)}%`}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: theme.text }}>{view === "aliments" ? "Progression des aliments" : "Recettes testées"}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginTop: 4 }}>{view === "aliments" ? "Touchez un aliment pour le valider, puis ajustez la réaction." : "Filtrez par compatibilité et notez le retour d'Imran."}</div>
+          </div>
+        </div>
+      </Card>
 
       {view === "aliments" && (
         <>
@@ -1532,7 +1723,7 @@ const FoodSection = ({ data, update }) => {
           <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
             {Object.keys(FOOD_CATEGORIES).map(c => <Chip key={c} active={cat === c} onClick={() => setCat(c)} color={CAT_COLORS[c]}>{c}</Chip>)}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {FOOD_CATEGORIES[cat].map(food => renderFoodItem(food, false))}
             {(data.customFoods?.[cat] || []).map(food => renderFoodItem(food, true))}
             {/* Bouton + Ajouter en bas de la grille */}
@@ -1559,7 +1750,7 @@ const FoodSection = ({ data, update }) => {
             <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>{testedCount}/{allRecipePool.length} recettes testées</div>
             <Btn onClick={openCreate} small>+ Créer</Btn>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 14 }}>
             {[
               ["compatible", "✅ Compatibles"],
               ["loved",      "❤️ Adorées"],
@@ -1576,7 +1767,7 @@ const FoodSection = ({ data, update }) => {
             const compatible = missing.length === 0;
             const tested = testedRecipes[recipe.name];
             return (
-              <Card key={recipe.id || i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); setRecipeNote(tested?.note || ""); }} style={{ marginBottom: 10, cursor: "pointer" }}>
+              <Card key={recipe.id || i} onClick={() => { setRecipeModal(recipe); setPortions(recipe.basePortions); setRecipeNote(tested?.note || ""); }} style={{ marginBottom: 10, cursor: "pointer", padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   <span style={{ fontSize: 28, flexShrink: 0 }}>{recipe.emoji}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -2393,6 +2584,7 @@ const TemperatureSection = ({ data, update }) => {
 
 // ─── SECTION: Baths ───
 const BathsSection = ({ data, update }) => {
+  const { theme } = useTheme();
   const [modal, setModal] = useState(false);
   const [time, setTime] = useState(nowStr());
   const [temp, setTemp] = useState("37");
@@ -2401,20 +2593,51 @@ const BathsSection = ({ data, update }) => {
   const add = () => { update(d => { d.baths.push({ id: uid(), time, temp: Number(temp), note }); }); setModal(false); setNote(""); };
   const remove = (id) => update(d => { d.baths = d.baths.filter(x => x.id !== id); });
   const dayBaths = [...(data.baths||[])].filter(b => b.time?.startsWith(dateStr)).sort((a, b) => b.time.localeCompare(a.time));
+  const lastBath = dayBaths[0];
+  const avgTemp = dayBaths.length ? (dayBaths.reduce((sum, b) => sum + (Number(b.temp) || 0), 0) / dayBaths.length).toFixed(1) : null;
 
   return (
-    <div ref={containerRef}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>🛁 Bains</div>
+    <div ref={containerRef} className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: "#E8F6F5", color: "#0F8B8D", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 10 }}>🛁</div>
+          <div className="display-font" style={{ fontSize: 28, lineHeight: 1.05, fontWeight: 750, color: theme.text }}>Bains</div>
+          <div style={{ fontSize: 13, color: theme.textMuted, fontWeight: 800, marginTop: 4 }}>{dayBaths.length} bain{dayBaths.length > 1 ? "s" : ""} aujourd'hui</div>
+        </div>
         <Btn onClick={() => { setTime(nowStr()); setModal(true); }} small>+ Ajouter</Btn>
       </div>
       <DayNav dateLabel={dateLabel} dayOffset={dayOffset} goToday={goToday} prev={prev} next={next} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+        <div style={{ minHeight: 76, borderRadius: 12, padding: "11px 10px", background: "#E8F6F5", border: "1px solid rgba(15,139,141,0.2)", boxShadow: "0 8px 20px rgba(16,35,63,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "#0F8B8D", marginBottom: 8 }}>Bains</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: theme.text, lineHeight: 1 }}>{dayBaths.length}</div>
+        </div>
+        <div style={{ minHeight: 76, borderRadius: 12, padding: "11px 10px", background: theme.sky, border: "1px solid rgba(47,110,163,0.18)", boxShadow: "0 8px 20px rgba(16,35,63,0.04)" }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "#2F6EA3", marginBottom: 8 }}>Temp. moyenne</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: theme.text, lineHeight: 1 }}>{avgTemp ? `${avgTemp}°C` : "—"}</div>
+        </div>
+      </div>
+      {lastBath && (
+        <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 42, height: 42, borderRadius: 13, background: "#E8F6F5", color: "#0F8B8D", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🛁</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: theme.textMuted }}>Dernier bain</div>
+            <div style={{ fontSize: 19, fontWeight: 900, color: theme.text }}>{lastBath.temp}°C <span style={{ fontSize: 13, color: theme.textMuted }}>{fmtTime(lastBath.time)}</span></div>
+          </div>
+        </Card>
+      )}
       {dayOffset === 0 && (
-        <Btn variant="secondary" full onClick={() => update(d => { d.baths.push({ id: uid(), time: nowStr(), temp: 37, note: "" }); })} style={{ marginBottom: 16 }}>🛁 Bain maintenant (37°C)</Btn>
+        <Btn variant="secondary" full onClick={() => update(d => { d.baths.push({ id: uid(), time: nowStr(), temp: 37, note: "" }); })} style={{ marginBottom: 16, minHeight: 58, background: "#E8F6F5", color: "#0F8B8D", border: "1px solid rgba(15,139,141,0.2)" }}>🛁 Bain maintenant (37°C)</Btn>
       )}
       {dayBaths.length === 0 && <EmptyState emoji="🛁" text={`Aucun bain — ${dateLabel}`} />}
+      {dayBaths.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 2px 10px" }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: theme.text }}>Historique</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted }}>{dayBaths.length} entrée{dayBaths.length > 1 ? "s" : ""}</div>
+        </div>
+      )}
       {dayBaths.map(b => (
-        <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        <Card key={b.id} style={{ display: "flex", alignItems: "center", marginBottom: 10, padding: 14 }}>
           <span style={{ fontSize: 22, marginRight: 14 }}>🛁</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 14 }}>{b.temp}°C</div>
@@ -2426,6 +2649,15 @@ const BathsSection = ({ data, update }) => {
       <Modal open={modal} onClose={() => setModal(false)} title="Bain">
         <Input label="Heure" type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
         <Input label="Température eau (°C)" type="number" step="0.5" value={temp} onChange={e => setTemp(e.target.value)} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, margin: "-4px 0 14px" }}>
+          {["36.5", "37", "37.5"].map(v => (
+            <button key={v} onClick={() => setTemp(v)} style={{
+              minHeight: 44, borderRadius: 12, border: `1.5px solid ${temp === v ? "#0F8B8D" : theme.border}`,
+              background: temp === v ? "#E8F6F5" : theme.card, color: temp === v ? "#0F8B8D" : theme.text,
+              fontWeight: 900, cursor: "pointer"
+            }}>{v}°C</button>
+          ))}
+        </div>
         <Input label="Note" value={note} onChange={e => setNote(e.target.value)} placeholder="Produit, durée..." />
         <Btn onClick={add} full>Enregistrer</Btn>
       </Modal>
@@ -3416,9 +3648,135 @@ const RoutinesSection = ({ data, update }) => {
 // ═══════════════════════════════════════
 //  MAIN APP
 // ═══════════════════════════════════════
+const ModuleHubSection = ({ data, goTo }) => {
+  const { theme } = useTheme();
+  const foodCount = Object.keys(data.foods || {}).filter(k => data.foods[k]).length;
+  const lastGrowth = [...(data.growth || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+  const teethCount = Object.keys(data.teeth || {}).length;
+  const temp = (data.temperature || [])[Math.max(0, (data.temperature || []).length - 1)];
+  const todayB = todayItems(data.bottles);
+  const todayD = todayItems(data.diapers);
+  const todayS = sleepForDay(data.sleep, todayStr());
+  const completedMilestones = Object.values(data.milestonesChecked || {}).filter(Boolean).length;
+  const modules = [
+    { group: "Alimentation", color: theme.accent, items: [
+      { key: "bottles", icon: "🍼", label: "Biberon", value: `${todayB.length} aujourd'hui` },
+      { key: "food", icon: "🥣", label: "Diversification", value: `${foodCount} aliments` },
+      { key: "food", icon: "🍽", label: "Recettes", value: `${(data.customRecipes || []).length} perso` },
+    ]},
+    { group: "Hygiène & Sommeil", color: "#2F6EA3", items: [
+      { key: "sleep", icon: "🌙", label: "Sommeil", value: `${todayS.length} entrées` },
+      { key: "diapers", icon: "🧷", label: "Change", value: `${todayD.length} changés` },
+      { key: "baths", icon: "🛁", label: "Bains", value: `${todayItems(data.baths).length} aujourd'hui` },
+    ]},
+    { group: "Santé", color: "#7C5CAD", items: [
+      { key: "growth", icon: "📈", label: "Croissance", value: lastGrowth ? `${lastGrowth.weight || "?"} kg` : "À noter" },
+      { key: "teeth", icon: "🦷", label: "Dents", value: `${teethCount}/20` },
+      { key: "vaccines", icon: "💉", label: "Vaccins", value: "Calendrier" },
+      { key: "appointments", icon: "📅", label: "Rendez-vous", value: `${(data.appointments || []).length}` },
+      { key: "medicines", icon: "✚", label: "Médicaments", value: `${(data.medicines || []).length}` },
+      { key: "temperature", icon: "🌡", label: "Température", value: temp ? `${temp.value}°C` : "À noter" },
+    ]},
+    { group: "Développement", color: "#0F8B8D", items: [
+      { key: "milestones", icon: "👣", label: "Étapes", value: `${completedMilestones} validées` },
+      { key: "exercises", icon: "☀", label: "Éveil", value: `${Object.keys(data.exercises?.[todayStr()] || {}).length} faits` },
+      { key: "routines", icon: "↻", label: "Routines", value: `${(data.routines || []).length}` },
+    ]},
+    { group: "Carnet & Suivi", color: theme.coral, items: [
+      { key: "notes", icon: "✎", label: "Notes", value: `${(data.notes || []).length}` },
+      { key: "books", icon: "📖", label: "Livres", value: `${(data.books || []).length}` },
+      { key: "pdf", icon: "PDF", label: "Rapport PDF", value: "Exporter" },
+    ]},
+  ];
+
+  return (
+    <div className="screen-shell" style={{ paddingTop: 16 }}>
+      <div style={{ marginBottom: 14 }}>
+        <h1 className="display-font" style={{ fontSize: 28, lineHeight: 1.05, fontWeight: 750, color: theme.text }}>Plus de suivi</h1>
+        <p style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: theme.textMuted }}>Tous les modules d'Imran, rangés pour aller vite.</p>
+      </div>
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, marginBottom: 4 }}>
+        {modules.map(group => <Chip key={group.group} color={group.color}>{group.group}</Chip>)}
+      </div>
+      {modules.map(group => (
+        <Card key={group.group} style={{ marginBottom: 12, padding: 12 }}>
+          <div style={{ color: group.color, fontSize: 14, fontWeight: 900, marginBottom: 10 }}>{group.group}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {group.items.map(item => (
+              <button key={`${group.group}-${item.label}`} onClick={() => goTo(item.key)} style={{ minHeight: 92, border: `1px solid ${group.color}24`, borderRadius: 12, background: `${group.color}10`, padding: "10px 8px", color: theme.text, cursor: "pointer", textAlign: "center" }}>
+                <span style={{ width: 36, height: 36, borderRadius: 11, margin: "0 auto 7px", background: theme.card, color: group.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: item.icon === "PDF" ? 11 : 18, fontWeight: 900 }}>{item.icon}</span>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 900, lineHeight: 1.15 }}>{item.label}</span>
+                <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: theme.textMuted, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.value}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+const QuickAddSheet = ({ open, onClose, goTo }) => {
+  const { theme } = useTheme();
+  const groups = [
+    { title: "Actions rapides", actions: [
+      { key: "bottles", label: "Biberon", hint: "ml, heure, type", icon: "🍼", color: theme.accent, bg: theme.accentSoft },
+      { key: "sleep", label: "Sommeil", hint: "début ou fin", icon: "🌙", color: "#2F6EA3", bg: theme.sky },
+      { key: "diapers", label: "Change", hint: "type et note", icon: "🧷", color: "#D97904", bg: theme.yellow },
+      { key: "temperature", label: "Température", hint: "santé", icon: "🌡", color: "#E96F4F", bg: "#FFF0E8" },
+    ]},
+    { title: "Santé", actions: [
+      { key: "medicines", label: "Médicament", hint: "dose", icon: "✚", color: "#B64040", bg: "#FEF2F2" },
+      { key: "appointments", label: "Rendez-vous", hint: "date", icon: "📅", color: "#6E63B8", bg: theme.lavender },
+      { key: "growth", label: "Croissance", hint: "mesure", icon: "📈", color: "#3A7CA5", bg: theme.sky },
+      { key: "teeth", label: "Dents", hint: "apparition", icon: "🦷", color: "#7C5CAD", bg: theme.lavender },
+    ]},
+    { title: "Développement & carnet", actions: [
+      { key: "food", label: "Diversification", hint: "aliment", icon: "🥣", color: theme.accent, bg: theme.accentSoft },
+      { key: "baths", label: "Bain", hint: "heure", icon: "🛁", color: "#0F8B8D", bg: "#E8F6F5" },
+      { key: "exercises", label: "Éveil", hint: "activité", icon: "☀", color: "#D97904", bg: theme.yellow },
+      { key: "notes", label: "Note", hint: "journal", icon: "✎", color: "#536172", bg: theme.subtle },
+    ]},
+  ];
+
+  return (
+    <Modal open={open} onClose={onClose} title="Ajouter">
+      {groups.map(group => (
+        <div key={group.title} style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: theme.text, margin: "0 0 8px 2px" }}>{group.title}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {group.actions.map(action => (
+              <button
+                key={action.key}
+                onClick={() => { goTo(action.key); onClose(); }}
+                style={{
+                  minHeight: 92,
+                  border: `1px solid ${action.color}33`,
+                  borderRadius: 12,
+                  background: action.bg,
+                  color: theme.text,
+                  textAlign: "left",
+                  padding: 12,
+                  cursor: "pointer",
+                  boxShadow: "0 10px 26px rgba(16,35,63,0.05)",
+                }}
+              >
+                <span style={{ width: 34, height: 34, borderRadius: 11, background: theme.card, color: action.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, marginBottom: 8 }}>{action.icon}</span>
+                <span style={{ display: "block", fontSize: 14, fontWeight: 900, color: action.color }}>{action.label}</span>
+                <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: theme.textMuted, marginTop: 2 }}>{action.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </Modal>
+  );
+};
+
 export default function App() {
   const [data, setData] = useState(null);
   const [section, setSection] = useState("home");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -3566,6 +3924,7 @@ export default function App() {
 
   const SECTIONS = {
     home: <DashboardHome data={data} goTo={setSection} onSwitchProfile={switchProfile} />,
+    hub: <ModuleHubSection data={data} goTo={setSection} />,
     bottles: <BottlesSection data={data} update={update} />,
     diapers: <DiapersSection data={data} update={update} />,
     sleep: <SleepSection data={data} update={update} />,
@@ -3586,11 +3945,11 @@ export default function App() {
   };
 
   const navItems = [
-    { key: "bottles", emoji: "🍼", label: "Biberon" },
-    { key: "diapers", emoji: "🧷", label: "Couche" },
-    { key: "home",    emoji: "🏠", label: "Home", isCenter: true },
-    { key: "sleep",   emoji: "😴", label: "Sommeil" },
-    { key: "routines",emoji: "🔄", label: "Routine" },
+    { key: "home",    emoji: "⌂", label: "Aujourd'hui" },
+    { key: "hub",     emoji: "▦", label: "Suivi" },
+    { key: "add",     emoji: "+", label: "Ajouter", isCenter: true },
+    { key: "notes",   emoji: "□", label: "Carnet" },
+    { key: "routines",emoji: "↻", label: "Routine" },
   ];
 
   return (
@@ -3598,10 +3957,12 @@ export default function App() {
       <style>{CSS}</style>
       <SyncBadge syncing={syncing} />
 
-      <div style={{ maxWidth: 500, margin: "0 auto", minHeight: "100vh", background: theme.bg, paddingBottom: 100, transition: "background .2s" }}>
+      <div className="screen-shell" style={{ maxWidth: 520, margin: "0 auto", minHeight: "100vh", background: theme.bg, paddingBottom: 112, transition: "background .2s", boxShadow: "0 0 0 1px rgba(16,35,63,0.03)" }}>
         {section !== "home" && (
-          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: theme.headerBg, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${theme.border}` }}>
-            <span style={{ fontWeight: 800, fontSize: 15, color: theme.text }}>{data.baby.name}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: `${theme.headerBg}F5`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${theme.border}` }}>
+            <button onClick={() => setSection("home")} aria-label="Retour accueil" style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${theme.border}`, background: theme.card, color: theme.text, fontSize: 20, cursor: "pointer" }}>‹</button>
+            <span style={{ fontWeight: 900, fontSize: 15, color: theme.text, flex: 1 }}>{data.baby.name}</span>
+            <button onClick={() => setQuickAddOpen(true)} aria-label="Ajouter rapidement" style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: theme.accentGrad, color: "#fff", fontSize: 22, cursor: "pointer", boxShadow: "0 8px 20px rgba(95,147,109,0.24)" }}>+</button>
           </div>
         )}
 
@@ -3609,21 +3970,23 @@ export default function App() {
           {SECTIONS[section] || SECTIONS.home}
         </div>
 
+        <QuickAddSheet open={quickAddOpen} onClose={() => setQuickAddOpen(false)} goTo={setSection} />
+
         {/* Bottom nav */}
-        <div className="nav-fixed" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: `${theme.navBg}F0`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: `1.5px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", paddingTop: 8, zIndex: 200, transition: "background .2s" }}>
+        <div className="nav-fixed" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 520, background: `${theme.navBg}F2`, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderTop: `1px solid ${theme.navBorder}`, display: "flex", justifyContent: "space-around", alignItems: "flex-end", paddingTop: 8, zIndex: 200, transition: "background .2s", boxShadow: "0 -14px 34px rgba(16,35,63,0.08)" }}>
           {navItems.map(n => {
             if (n.isCenter) return (
-              <div key="home" onClick={() => setSection("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -16 }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", background: theme.accentGrad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(129,140,248,.4)", transition: "transform .15s", transform: section === "home" ? "scale(1.08)" : "scale(1)" }}>
-                  <span style={{ fontSize: 22 }}>🏠</span>
+              <div key="add" onClick={() => setQuickAddOpen(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", marginTop: -18 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: theme.accentGrad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 26px rgba(95,147,109,.35)", border: `4px solid ${theme.bg}`, transition: "transform .15s", transform: quickAddOpen ? "scale(1.06)" : "scale(1)" }}>
+                  <span style={{ fontSize: 30, lineHeight: 1, color: "#fff", marginTop: -2 }}>+</span>
                 </div>
               </div>
             );
             const active = section === n.key;
             return (
-              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: active ? "#7C3AED" : theme.textMuted, transition: "color .2s", padding: "4px 8px", minWidth: 44 }}>
+              <div key={n.key} onClick={() => setSection(n.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: active ? theme.accent : theme.textMuted, transition: "color .2s", padding: "4px 8px", minWidth: 54 }}>
                 <span style={{ fontSize: 20, transition: "transform .15s", transform: active ? "scale(1.15)" : "scale(1)" }}>{n.emoji}</span>
-                <span style={{ fontSize: 10, fontWeight: 800 }}>{n.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 900, whiteSpace: "nowrap" }}>{n.label}</span>
               </div>
             );
           })}
