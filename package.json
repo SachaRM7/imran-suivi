@@ -36,5 +36,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "engines": {
+    "node": "^24.22.1"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.7"
   }
 }
